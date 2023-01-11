@@ -32,7 +32,7 @@ class TemplateView(View):
                 }
             response = json.dumps(response)
         else:
-            # This is meant to return the raw template.
+            # This is meant to return an example template.
             response = render(request, f'{template_type}/{template_name}/template.txt')
 
         return HttpResponse(response)
