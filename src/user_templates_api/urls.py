@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     path("template_types/", views.TemplateTypeView.as_view(), name="template_types"),
-    path("templates/<str:template_type>/", views.TemplateView.as_view(), name="templates_by_template_type"),
 
+    path("templates/<str:template_type>/", views.TemplateView.as_view(), name="templates_by_template_type"),
     path("templates/<str:template_type>/<str:template_name>/", views.TemplateView.as_view(), name="template"),
 ]

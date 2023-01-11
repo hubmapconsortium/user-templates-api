@@ -4,6 +4,7 @@ from django.views import View
 from django.http import HttpResponse
 from django.conf import settings
 import json
+import importlib
 
 
 def index(request):
@@ -12,7 +13,7 @@ def index(request):
 
 class TemplateTypeView(View):
     def get(self, request):
-        return HttpResponse(json.dumps(settings.CONFIG))
+        return HttpResponse(json.dumps(settings.CONFIG['template_types']))
 
 
 class TemplateView(View):
@@ -40,10 +41,12 @@ class TemplateView(View):
         if not template_name:
             return HttpResponse('Missing template_name', status=500)
         else:
-            # TODO: Add functionality which takes dataset_uuid and grabs data from external services
-            #       which will be used to populate template.
             # Call utility functions for rendering that template. This is necessary as some templates
             # might have their own python scripts to actually generate the script.
-            response = render(request, f'{template_type}/{template_name}/template.txt', context={})
+            # Load the appropriate template module dynamically
+            template_module = importlib.import_module(f'user_templates_api.templates.{template_type}.{template_name}.render', package=None)
+
+            # Call the render function to actually get the template
+            response = template_module.render(json.loads(request.body))
             return HttpResponse(response)
 
