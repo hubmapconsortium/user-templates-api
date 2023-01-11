@@ -1,8 +1,0 @@
-{
-  "template_types": {
-    "jupyter_lab": {
-      "usw_job_type": "jupyter_lab",
-      "description": "Templates that can be used through JupyterLab as .ipynb files"
-    }
-  }
-}
