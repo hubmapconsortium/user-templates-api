@@ -11,7 +11,7 @@ def render(body):
     uuids = body['uuids']
     entity_type = body['entity_type']
 
-    url_base = settings.PORTAL_UI_BASE
+    url_base = settings.CONFIG['PORTAL_UI_BASE']
 
     cells = _get_cells('metadata.txt', uuids=uuids, url_base=url_base, entity_type=entity_type)
 
