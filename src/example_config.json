@@ -1,0 +1,17 @@
+{
+  "template_types": {
+    "jupyter_lab": {
+      "usw_job_type": "",
+      "description": ""
+    }
+  },
+  "PORTAL_UI_BASE": "",
+  "ENTITY_API_BASE": "",
+  "ELASTICSEARCH_ENDPOINT": "",
+  "PORTAL_INDEX_PATH": "",
+  "TYPE_SERVICE_ENDPOINT": "",
+  "TYPE_SERVICE_PATH": "",
+  "ASSETS_ENDPOINT": "",
+  "GLOBUS_CLIENT_ID": "",
+  "GLOBUS_CLIENT_SECRET": ""
+}
