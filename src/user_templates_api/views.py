@@ -47,6 +47,9 @@ class TemplateView(View):
             template_module = importlib.import_module(f'user_templates_api.templates.{template_type}.{template_name}.render', package=None)
 
             # Call the render function to actually get the template
-            response = template_module.render(json.loads(request.body))
-            return HttpResponse(response)
-
+            try:
+                rendered_template = template_module.render(json.loads(request.body))
+                return HttpResponse(json.dumps({'success': True, 'message': 'Successful template render', 'data': {'template': rendered_template}}))
+            except Exception as e:
+                print(repr(e))
+                return HttpResponse(json.dumps({'success': False, 'message': 'Failure when attempting to render template.'}))

@@ -33,6 +33,7 @@ def render(body):
         'nbformat': 4,
         'nbformat_minor': 5
     }
+
     return json.dumps(nb)
 
 def _limit_to_zarr_files(uuids_to_files):

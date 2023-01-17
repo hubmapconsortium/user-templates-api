@@ -3,6 +3,7 @@ from nbformat.v4 import (new_notebook, new_markdown_cell, new_code_cell)
 import vitessce
 from django.conf import settings
 from user_templates_api.utils.client import get_client
+import json
 
 def render(body):
     uuid = body['uuid']
@@ -32,4 +33,4 @@ def render(body):
     nb['cells'] = cells
     nb_str = nbformat.writes(nb)
 
-    return {'success': True, 'template': nb_str}
+    return nb_str
