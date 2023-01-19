@@ -22,14 +22,22 @@ class TemplateView(View):
 
         if not template_name:
             templates_dir = settings.BASE_DIR / 'user_templates_api' / 'templates'
-            # TODO: Add basic "tag" searching functionality. IE check if tag is in metadata file.
             # TODO: Add support for checking is_multi_dataset_template field.
+            query_tags = request.GET.getlist("tags", [])
+
             for template_type_dir in (templates_dir / template_type).iterdir():
+                if not template_type_dir.is_dir() or '__' in str(template_type_dir):
+                    continue
+
                 template_metadata = json.load(open(template_type_dir / 'metadata.json'))
-                response[template_type_dir.name] = {
-                    "template_title": template_metadata['title'],
-                    "description": template_metadata['description']
-                }
+
+                template_tags = template_metadata['tags']
+
+                if query_tags and (set(template_tags) & set(query_tags)):
+                    response[template_type_dir.name] = {
+                        "template_title": template_metadata['title'],
+                        "description": template_metadata['description']
+                    }
             response = json.dumps(response)
         else:
             # This is meant to return an example template.
