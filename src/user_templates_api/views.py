@@ -13,7 +13,7 @@ def index(request):
 
 class TemplateTypeView(View):
     def get(self, request):
-        return HttpResponse(json.dumps(settings.CONFIG['template_types']))
+        return HttpResponse(json.dumps({"success": True, "message": "Success", "data": settings.CONFIG['template_types']}))
 
 
 class TemplateView(View):
@@ -38,12 +38,11 @@ class TemplateView(View):
                         "template_title": template_metadata['title'],
                         "description": template_metadata['description']
                     }
-            response = json.dumps(response)
         else:
             # This is meant to return an example template.
             response = render(request, f'{template_type}/{template_name}/template.txt')
 
-        return HttpResponse(response)
+        return HttpResponse(json.dumps({"success": True, "message": "Success", "data": response}))
 
     def post(self, request, template_type, template_name=""):
         if not template_name:
