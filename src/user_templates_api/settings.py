@@ -33,6 +33,7 @@ SECRET_KEY = 'tjwe)7^o0)(+_tx!4f=(9go*j9ws#fixs3!+y9rn1m%-6=t=1&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1']
 ALLOWED_HOSTS = []
 
 
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -126,3 +128,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Q_CLUSTER = {
+#     'ret--host 0.0.0.0 ry': 120,
+#     'timeout': 60,
+#     'workers': 8,
+# }
