@@ -7,8 +7,7 @@ services:
       - ./user_templates_api/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./user_templates_api/nginx/conf.d/user-templates.conf:/etc/nginx/conf.d/user-templates.conf
     ports:
-      # TODO: check appropriate ports
-      - "80:80"
+      - "5001:5001"
     depends_on:
       - web
   web:
