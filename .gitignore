@@ -2,3 +2,5 @@
 db.sqlite3
 /venv/
 /src/config.json
+docker-compose.yml
+config.json
