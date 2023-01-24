@@ -1,6 +1,9 @@
+.env*
 .idea
+.pyproject.toml
 db.sqlite3
-/venv/
-/src/config.json
 docker-compose.yml
 config.json
+__pycache__/
+/venv/
+/src/config.json
