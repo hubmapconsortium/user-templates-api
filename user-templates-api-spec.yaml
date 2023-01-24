@@ -1,0 +1,151 @@
+openapi: 3.0.0
+info:
+  title: HuBMAP User Templates API
+  description: The User Templates API returns pre-defined templates to be used by interactive services (such as JupyterLab).
+  version: 1.0.0
+  termsOfService: 'https://hubmapconsortium.org'
+  contact:
+    name: HuBMAP Help Desk
+    email: help@hubmapconsortium.org
+  license:
+    name: MIT License
+    url: 'https://github.com/hubmapconsortium/user_workspaces_server/blob/master/license.txt'
+servers:
+  - url: "https://user-templates.api.hubmapconsortium.org/"
+components:
+  schemas:
+    GetTemplateTypesResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            template_type_name:
+              type: object
+              properties:
+                usw_job_type:
+                  type: string
+                  example: jupyter_lab
+                  description: This is tied to the User Workspaces Server
+                description:
+                  type: string
+                  example: Templates that can be used through JupyterLab as .ipynb files
+    GetTemplatesResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            template_name:
+              type: object
+              properties:
+                template_title:
+                  type: string
+                  example: JupyterLab Vitessce Visualization
+                description:
+                  type: string
+                  example: This notebook allows the user to visualize a specific dataset using the vitessce framework.
+    PostTemplateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            template:
+              type: string
+    TemplateRequest:
+      type: object
+      properties:
+        uuids:
+          type: array
+          items:
+            type: string
+paths:
+  '/template_types/':
+    get:
+      tags:
+        - Template Types
+      summary: Get a list of available template types.
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTemplateTypesResponse'
+  '/templates/{template_type}/':
+    get:
+      tags:
+        - Templates
+      summary: Get templates related to a template type.
+      parameters:
+        - name: template_type
+          in: path
+          description: Type of template.
+          required: true
+          schema:
+             type: string
+             example: jupyter_lab
+        - name: tags
+          in: query
+          description: Tags to find a specific type of template
+          required: false
+          schema:
+           type: array
+           items:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTemplatesResponse'
+  '/templates/{template_type}/{template_name}/':
+    post:
+      tags:
+        - Templates
+      summary: Generate a template.
+      parameters:
+        - name: template_type
+          in: path
+          description: Type of template.
+          required: true
+          schema:
+             type: string
+             example: jupyter_lab
+        - name: template_name
+          in: path
+          description: Name of template.
+          required: true
+          schema:
+             type: string
+             example: visualization
+      requestBody:
+        description: Details provided to template for generation.
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/TemplateRequest'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostTemplateResponse'
+tags:
+  - name: Templates
+  - name: Template Types
