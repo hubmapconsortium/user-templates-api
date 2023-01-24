@@ -28,12 +28,12 @@ CONFIG = json.load(
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'tjwe)7^o0)(+_tx!4f=(9go*j9ws#fixs3!+y9rn1m%-6=t=1&'
+SECRET_KEY = CONFIG["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = CONFIG["DEBUG"]
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1']
+ALLOWED_HOSTS = CONFIG["ALLOWED_HOSTS"]
 
 
 # Application definition
