@@ -13,7 +13,7 @@ def index(request):
 
 class TemplateTypeView(View):
     def get(self, request):
-        return HttpResponse(json.dumps(settings.CONFIG['template_types']))
+        return HttpResponse(json.dumps({"success": True, "message": "Success", "data": settings.CONFIG['template_types']}))
 
 
 class TemplateView(View):
@@ -22,20 +22,27 @@ class TemplateView(View):
 
         if not template_name:
             templates_dir = settings.BASE_DIR / 'user_templates_api' / 'templates'
-            # TODO: Add basic "tag" searching functionality. IE check if tag is in metadata file.
             # TODO: Add support for checking is_multi_dataset_template field.
+            query_tags = request.GET.getlist("tags", [])
+
             for template_type_dir in (templates_dir / template_type).iterdir():
+                if not template_type_dir.is_dir() or '__' in str(template_type_dir):
+                    continue
+
                 template_metadata = json.load(open(template_type_dir / 'metadata.json'))
-                response[template_type_dir.name] = {
-                    "template_title": template_metadata['title'],
-                    "description": template_metadata['description']
-                }
-            response = json.dumps(response)
+
+                template_tags = template_metadata['tags']
+
+                if query_tags and (set(template_tags) & set(query_tags)):
+                    response[template_type_dir.name] = {
+                        "template_title": template_metadata['title'],
+                        "description": template_metadata['description']
+                    }
         else:
             # This is meant to return an example template.
             response = render(request, f'{template_type}/{template_name}/template.txt')
 
-        return HttpResponse(response)
+        return HttpResponse(json.dumps({"success": True, "message": "Success", "data": response}))
 
     def post(self, request, template_type, template_name=""):
         if not template_name:
