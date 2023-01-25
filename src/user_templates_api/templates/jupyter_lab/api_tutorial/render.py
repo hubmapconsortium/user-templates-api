@@ -5,9 +5,7 @@ import re
 
 from django.conf import settings
 
-from user_templates_api.utils.client import get_client
-
-def render(body):
+def render(body, util_client):
     uuids = body['uuids']
     entity_type = body['entity_type']
 
@@ -21,7 +19,7 @@ def render(body):
             + settings.CONFIG['PORTAL_INDEX_PATH'])
         cells += _get_cells('files.txt', search_url=search_url)
 
-    uuids_to_files = get_client().get_files(uuids)
+    uuids_to_files = util_client.get_files(uuids)
     uuids_to_zarr_files = _limit_to_zarr_files(uuids_to_files)
     zarr_files = set().union(*uuids_to_zarr_files.values())
     if zarr_files:
