@@ -11,7 +11,6 @@ from .client_utils import files_from_response
 from portal_visualization.builder_factory import get_view_config_builder
 from portal_visualization.builders.base_builders import ConfCells
 from django.conf import settings
-from django.apps import apps
 
 Entity = namedtuple('Entity', ['uuid', 'type', 'name'], defaults=['TODO: name'])
 
@@ -31,15 +30,10 @@ def _get_hits(response_json):
     inner_hits = outer_hits['hits']
     return inner_hits
 
-def get_client():
-    auth_helper = apps.get_app_config(
-        "user_templates_api"
-    ).auth_helper
-
+def get_client(group_token):
     return ApiClient(
         settings.CONFIG['ENTITY_API_BASE'],
-        # TODO: This should just be the getProcessSecret() from authHelper
-        auth_helper.getProcessSecret()
+        group_token
     )
 class ApiClient:
     def __init__(self, url_base=None, groups_token=None):
