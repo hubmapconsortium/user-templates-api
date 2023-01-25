@@ -6,6 +6,8 @@ from django.conf import settings
 import json
 import importlib
 
+from user_templates_api.utils.client import get_client
+from django.apps import apps
 
 def index(request):
     return HttpResponse('Welcome to the User Templates API.')
@@ -55,7 +57,19 @@ class TemplateView(View):
 
             # Call the render function to actually get the template
             try:
-                rendered_template = template_module.render(json.loads(request.body))
+                auth_helper = apps.get_app_config(
+                    "user_templates_api"
+                ).auth_helper
+
+                group_token = auth_helper.getAuthorizationTokens(request.headers)
+
+                if type(group_token) != str:
+                    response = HttpResponse('Invalid token')
+                    response.status_code = 401
+                    return response
+
+                util_client = get_client(group_token)
+                rendered_template = template_module.render(json.loads(request.body), util_client)
                 return HttpResponse(json.dumps({'success': True, 'message': 'Successful template render', 'data': {'template': rendered_template}}))
             except Exception as e:
                 print(repr(e))
