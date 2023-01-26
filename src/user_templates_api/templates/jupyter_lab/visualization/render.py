@@ -1,15 +1,11 @@
 import nbformat
 from nbformat.v4 import (new_notebook, new_markdown_cell, new_code_cell)
 import vitessce
-from django.conf import settings
-from user_templates_api.utils.client import get_client
-import json
 
-def render(body):
+def render(body, util_client):
     uuid = body['uuid']
-    client = get_client()
-    entity = client.get_entity(uuid)
-    vitessce_conf = client.get_vitessce_conf_cells_and_lifted_uuid(entity).vitessce_conf
+    entity = util_client.get_entity(uuid)
+    vitessce_conf = util_client.get_vitessce_conf_cells_and_lifted_uuid(entity).vitessce_conf
     if (vitessce_conf is None
             or vitessce_conf.conf is None
             or vitessce_conf.cells is None):
