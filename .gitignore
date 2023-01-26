@@ -1,6 +1,5 @@
 .env*
 .idea
-.pyproject.toml
 db.sqlite3
 docker-compose.yml
 config.json
