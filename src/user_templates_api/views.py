@@ -36,7 +36,7 @@ class TemplateView(View):
             # TODO: Add support for checking is_multi_dataset_template field.
             query_tags = request.GET.getlist("tags", [])
 
-            for template_type_dir in (templates_dir / template_type).iterdir():
+            for template_type_dir in (templates_dir / 'templates' / template_type).iterdir():
                 if not template_type_dir.is_dir() or "__" in str(template_type_dir):
                     continue
 
@@ -64,8 +64,10 @@ class TemplateView(View):
             # Call utility functions for rendering that template. This is necessary as some templates
             # might have their own python scripts to actually generate the script.
             # Load the appropriate template module dynamically
+
+            # TODO: We need to instantiate the object and then call the render function from that object
             template_module = importlib.import_module(
-                f"user_templates_api.templates.{template_type}.{template_name}.render",
+                f"user_templates_api.templates.{template_type}.templates.{template_name}.render",
                 package=None,
             )
 
@@ -81,6 +83,8 @@ class TemplateView(View):
                     return response
 
                 util_client = get_client(group_token)
+
+                # TODO: Instantiate the object and call the render function rather than just calling the render function
                 rendered_template = template_module.render(
                     json.loads(request.body), util_client
                 )
