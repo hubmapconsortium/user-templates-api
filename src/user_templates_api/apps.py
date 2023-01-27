@@ -1,11 +1,10 @@
 from django.apps import AppConfig
 from django.conf import settings
-import globus_sdk
-
 from hubmap_commons.hm_auth import AuthHelper
 
+
 class UserTemplatesApiConfig(AppConfig):
-    name = 'user_templates_api'
+    name = "user_templates_api"
     auth_helper = None
 
     def ready(self):
