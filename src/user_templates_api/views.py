@@ -1,4 +1,5 @@
 import importlib
+import inspect
 import json
 
 from django.apps import apps
@@ -6,8 +7,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views import View
-
-from user_templates_api.utils.client import get_client
 
 
 def index(request):
@@ -65,7 +64,6 @@ class TemplateView(View):
             # might have their own python scripts to actually generate the script.
             # Load the appropriate template module dynamically
 
-            # TODO: We need to instantiate the object and then call the render function from that object
             template_module = importlib.import_module(
                 f"user_templates_api.templates.{template_type}.templates.{template_name}.render",
                 package=None,
@@ -82,12 +80,17 @@ class TemplateView(View):
                     response.status_code = 401
                     return response
 
-                util_client = get_client(group_token)
+                data = {
+                    "group_token": group_token,
+                    "metadata": json.load(open(settings.BASE_DIR / "user_templates_api" / "templates"
+                                                  / template_type / "templates" / template_name / "metadata.json")),
+                    "body": json.loads(request.body)
+                }
 
-                # TODO: Instantiate the object and call the render function rather than just calling the render function
-                rendered_template = template_module.render(
-                    json.loads(request.body), util_client
-                )
+                template_class_name, template_class_obj = inspect.getmembers(template_module, inspect.isclass)[0]
+                template_class_obj_inst = template_class_obj()
+                rendered_template = template_class_obj_inst.render(data)
+
                 return HttpResponse(
                     json.dumps(
                         {

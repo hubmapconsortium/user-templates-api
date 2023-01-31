@@ -2,5 +2,6 @@
   "title": "JupyterLab HuBMAP API Tutorial",
   "description": "This notebook shows users how to utilize the HuBMAP APIs to perform analysis.",
   "tags": ["sdk", "api"],
-  "is_multi_dataset_template": true
+  "is_multi_dataset_template": true,
+  "template_format": "python"
 }

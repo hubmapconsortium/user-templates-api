@@ -3,10 +3,13 @@ import vitessce
 from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook
 
 
-def render(body, util_client):
+from user_templates_api.utils.client import get_client
+
+def render(body):
     uuid = body["uuid"]
-    entity = util_client.get_entity(uuid)
-    vitessce_conf = util_client.get_vitessce_conf_cells_and_lifted_uuid(
+    client = get_client(body['group_token'])
+    entity = client.get_entity(uuid)
+    vitessce_conf = client.get_vitessce_conf_cells_and_lifted_uuid(
         entity
     ).vitessce_conf
     if (

@@ -6,26 +6,24 @@ from django.conf import settings
 from user_templates_api.utils.client import get_client
 
 
-def get_metadata_cells(uuids):
+def get_metadata_cells(uuids, util_client):
     url_base = settings.CONFIG['PORTAL_UI_BASE']
     #  Need to get the uuids entity_type to pass it
     entity_type = 'dataset'
     return _get_cells('metadata.txt', uuids=uuids, url_base=url_base, entity_type=entity_type)
 
-def get_file_cells(uuids):
+def get_file_cells(uuids, util_client):
     # TODO: Need to check that these uuids are dataset uuids
     search_url = (
         settings.CONFIG['ELASTICSEARCH_ENDPOINT']
         + settings.CONFIG['PORTAL_INDEX_PATH'])
     return _get_cells('files.txt', search_url=search_url)
 
-def get_anndata_cells(uuids):
-    uuids_to_files = get_client().get_files(uuids)
+def get_anndata_cells(uuids, util_client):
+    uuids_to_files = util_client.get_files(uuids)
     uuids_to_zarr_files = _limit_to_zarr_files(uuids_to_files)
     zarr_files = set().union(*uuids_to_zarr_files.values())
-    if zarr_files:
-        return _get_cells('anndata.txt', uuids_to_zarr_files=uuids_to_zarr_files)
-    return False
+    return _get_cells('anndata.txt', uuids_to_zarr_files=uuids_to_zarr_files) if zarr_files else []
 
 def _limit_to_zarr_files(uuids_to_files):
     '''
