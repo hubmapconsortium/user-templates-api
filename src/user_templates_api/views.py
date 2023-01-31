@@ -1,7 +1,6 @@
 import importlib
 import inspect
 import json
-import traceback
 
 from django.apps import apps
 from django.conf import settings
