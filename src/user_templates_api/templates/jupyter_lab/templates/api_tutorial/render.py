@@ -1,12 +1,12 @@
-from user_templates_api.templates.jupyter_lab.render import JupyterLabRender
 import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
-
+from user_templates_api.templates.jupyter_lab.render import JupyterLabRender
 from user_templates_api.utils.client import get_client
+
 
 class JupyterLabAPITutorialRender(JupyterLabRender):
     def python_generate_template_data(self, data):
-        uuids = data['body']['uuids']
-        group_token = data['group_token']
+        uuids = data["body"]["uuids"]
+        group_token = data["group_token"]
 
         util_client = get_client(group_token)
 

@@ -1,6 +1,7 @@
 import importlib
 import inspect
 import json
+import traceback
 
 from django.apps import apps
 from django.conf import settings
@@ -35,7 +36,9 @@ class TemplateView(View):
             # TODO: Add support for checking is_multi_dataset_template field.
             query_tags = request.GET.getlist("tags", [])
 
-            for template_type_dir in (templates_dir / 'templates' / template_type).iterdir():
+            for template_type_dir in (
+                templates_dir / template_type / "templates"
+            ).iterdir():
                 if not template_type_dir.is_dir() or "__" in str(template_type_dir):
                     continue
 
@@ -82,13 +85,28 @@ class TemplateView(View):
 
                 data = {
                     "group_token": group_token,
-                    "metadata": json.load(open(settings.BASE_DIR / "user_templates_api" / "templates"
-                                                  / template_type / "templates" / template_name / "metadata.json")),
-                    "body": json.loads(request.body)
+                    "metadata": json.load(
+                        open(
+                            settings.BASE_DIR
+                            / "user_templates_api"
+                            / "templates"
+                            / template_type
+                            / "templates"
+                            / template_name
+                            / "metadata.json"
+                        )
+                    ),
+                    "body": json.loads(request.body),
                 }
 
-                template_class_name, template_class_obj = inspect.getmembers(template_module, inspect.isclass)[0]
-                template_class_obj_inst = template_class_obj()
+                template_class_obj_inst = None
+                for template_class_name, template_class_obj in inspect.getmembers(
+                    template_module, inspect.isclass
+                ):
+                    if template_name in template_class_obj.__module__:
+                        template_class_obj_inst = template_class_obj()
+                        break
+
                 rendered_template = template_class_obj_inst.render(data)
 
                 return HttpResponse(
@@ -101,7 +119,7 @@ class TemplateView(View):
                     )
                 )
             except Exception as e:
-                print(repr(e))
+                traceback.print_exc()
                 return HttpResponse(
                     json.dumps(
                         {

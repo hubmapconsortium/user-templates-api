@@ -1,7 +1,10 @@
 {
   "title": "JupyterLab Vitessce Visualization",
   "description": "This notebook allows the user to visualize a specific dataset using the vitessce framework.",
-  "tags": ["vitessce", "visualization"],
+  "tags": [
+    "vitessce",
+    "visualization"
+  ],
   "is_multi_dataset_template": false,
   "template_format": "python"
 }
