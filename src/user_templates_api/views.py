@@ -119,7 +119,7 @@ class TemplateView(View):
                     )
                 )
             except Exception as e:
-                traceback.print_exc()
+                print(repr(e))
                 return HttpResponse(
                     json.dumps(
                         {
