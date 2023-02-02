@@ -5,7 +5,6 @@ import json
 from django.apps import apps
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.views import View
 
 
