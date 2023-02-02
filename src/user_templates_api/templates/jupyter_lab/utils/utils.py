@@ -6,32 +6,32 @@ from string import Template
 from django.conf import settings
 
 
-def render(body, util_client):
-    uuids = body["uuids"]
-    entity_type = body["entity_type"]
-
+def get_metadata_cells(uuids, util_client):
     url_base = settings.CONFIG["PORTAL_UI_BASE"]
-
-    cells = _get_cells(
+    #  Need to get the uuids entity_type to pass it
+    entity_type = "dataset"
+    return _get_cells(
         "metadata.txt", uuids=uuids, url_base=url_base, entity_type=entity_type
     )
 
-    if entity_type == "datasets":
-        search_url = (
-            settings.CONFIG["ELASTICSEARCH_ENDPOINT"]
-            + settings.CONFIG["PORTAL_INDEX_PATH"]
-        )
-        cells += _get_cells("files.txt", search_url=search_url)
 
+def get_file_cells(uuids, util_client):
+    # TODO: Need to check that these uuids are dataset uuids
+    search_url = (
+        settings.CONFIG["ELASTICSEARCH_ENDPOINT"] + settings.CONFIG["PORTAL_INDEX_PATH"]
+    )
+    return _get_cells("files.txt", search_url=search_url)
+
+
+def get_anndata_cells(uuids, util_client):
     uuids_to_files = util_client.get_files(uuids)
     uuids_to_zarr_files = _limit_to_zarr_files(uuids_to_files)
     zarr_files = set().union(*uuids_to_zarr_files.values())
-    if zarr_files:
-        cells += _get_cells("anndata.txt", uuids_to_zarr_files=uuids_to_zarr_files)
-
-    nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
-
-    return json.dumps(nb)
+    return (
+        _get_cells("anndata.txt", uuids_to_zarr_files=uuids_to_zarr_files)
+        if zarr_files
+        else []
+    )
 
 
 def _limit_to_zarr_files(uuids_to_files):

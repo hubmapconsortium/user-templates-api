@@ -1,13 +1,11 @@
 import importlib
+import inspect
 import json
 
 from django.apps import apps
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.views import View
-
-from user_templates_api.utils.client import get_client
 
 
 def index(request):
@@ -30,13 +28,15 @@ class TemplateTypeView(View):
 class TemplateView(View):
     def get(self, request, template_type, template_name=""):
         response = {}
+        templates_dir = settings.BASE_DIR / "user_templates_api" / "templates"
 
         if not template_name:
-            templates_dir = settings.BASE_DIR / "user_templates_api" / "templates"
             # TODO: Add support for checking is_multi_dataset_template field.
             query_tags = request.GET.getlist("tags", [])
 
-            for template_type_dir in (templates_dir / template_type).iterdir():
+            for template_type_dir in (
+                templates_dir / template_type / "templates"
+            ).iterdir():
                 if not template_type_dir.is_dir() or "__" in str(template_type_dir):
                     continue
 
@@ -51,7 +51,20 @@ class TemplateView(View):
                     }
         else:
             # This is meant to return an example template.
-            response = render(request, f"{template_type}/{template_name}/template.txt")
+            template_metadata = json.load(
+                open(
+                    templates_dir
+                    / template_type
+                    / "templates"
+                    / template_name
+                    / "metadata.json"
+                )
+            )
+
+            response[template_name] = {
+                "template_title": template_metadata["title"],
+                "description": template_metadata["description"],
+            }
 
         return HttpResponse(
             json.dumps({"success": True, "message": "Success", "data": response})
@@ -64,8 +77,9 @@ class TemplateView(View):
             # Call utility functions for rendering that template. This is necessary as some templates
             # might have their own python scripts to actually generate the script.
             # Load the appropriate template module dynamically
+
             template_module = importlib.import_module(
-                f"user_templates_api.templates.{template_type}.{template_name}.render",
+                f"user_templates_api.templates.{template_type}.templates.{template_name}.render",
                 package=None,
             )
 
@@ -80,10 +94,32 @@ class TemplateView(View):
                     response.status_code = 401
                     return response
 
-                util_client = get_client(group_token)
-                rendered_template = template_module.render(
-                    json.loads(request.body), util_client
-                )
+                data = {
+                    "group_token": group_token,
+                    "metadata": json.load(
+                        open(
+                            settings.BASE_DIR
+                            / "user_templates_api"
+                            / "templates"
+                            / template_type
+                            / "templates"
+                            / template_name
+                            / "metadata.json"
+                        )
+                    ),
+                    "body": json.loads(request.body),
+                }
+
+                template_class_obj_inst = None
+                for template_class_name, template_class_obj in inspect.getmembers(
+                    template_module, inspect.isclass
+                ):
+                    if template_name in template_class_obj.__module__:
+                        template_class_obj_inst = template_class_obj()
+                        break
+
+                rendered_template = template_class_obj_inst.render(data)
+
                 return HttpResponse(
                     json.dumps(
                         {

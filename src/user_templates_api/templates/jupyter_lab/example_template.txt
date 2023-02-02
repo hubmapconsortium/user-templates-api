@@ -1,0 +1,16 @@
+{{ get_metadata_cells }}
+{{ get_file_cells }}
+{{ get_anndata_cells }}
+^ This will generate JSON
+This is my custom template
+Not in any particular format
+print('hello world'), but we can now use conditional logic to build the result of my template. Example
+{% for uuid in uuids %}
+{
+}
+{% if uuid.entity_type == 'dataset' %}
+
+print('this uuid is a dataset')
+{% endif %}
+{% endfor %}
+Is it the responsibility of code-owners to determine whether the template will be functional and/or return something that is valid for JupyterLab?

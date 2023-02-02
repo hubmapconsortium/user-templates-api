@@ -1,0 +1,9 @@
+{
+  "title": "Example JSON Template",
+  "description": "This notebook is an example template used to create other JSON based templates.",
+  "tags": [
+    "example"
+  ],
+  "is_multi_dataset_template": true,
+  "template_format": "json"
+}
