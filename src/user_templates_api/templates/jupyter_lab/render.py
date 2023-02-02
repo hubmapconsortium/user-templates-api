@@ -48,7 +48,6 @@ class JupyterLabRender:
         template_json = json.load(open(template_file_path))
         cells = []
         for template_item in template_json:
-            print(template_item)
             cell_type = template_item["cell_type"]
             src = template_item["src"]
             if cell_type == "template_cell":
