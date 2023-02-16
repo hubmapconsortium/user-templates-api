@@ -139,3 +139,62 @@ class TemplateView(View):
                         }
                     )
                 )
+
+
+class TestTemplateView(View):
+    def post(self, request, template_type, template_format):
+        # Call utility functions for rendering that template. This is necessary as some templates
+        # might have their own python scripts to actually generate the script.
+        # Load the appropriate template module dynamically
+
+        template_module = importlib.import_module(
+            f"user_templates_api.templates.{template_type}.render",
+            package=None,
+        )
+
+        # Call the render function to actually get the template
+        try:
+            auth_helper = apps.get_app_config("user_templates_api").auth_helper
+
+            group_token = auth_helper.getAuthorizationTokens(request.headers)
+
+            if type(group_token) != str:
+                response = HttpResponse("Invalid token")
+                response.status_code = 401
+                return response
+
+            data = {
+                "group_token": group_token,
+                "metadata": {"template_format": template_format},
+                "body": json.loads(request.body),
+            }
+
+            template_class_obj_inst = None
+            for template_class_name, template_class_obj in inspect.getmembers(
+                template_module, inspect.isclass
+            ):
+                if template_type in template_class_obj.__module__:
+                    template_class_obj_inst = template_class_obj()
+                    break
+
+            rendered_template = template_class_obj_inst.render(data)
+
+            return HttpResponse(
+                json.dumps(
+                    {
+                        "success": True,
+                        "message": "Successful template render",
+                        "data": {"template": rendered_template},
+                    }
+                )
+            )
+        except Exception as e:
+            print(repr(e))
+            return HttpResponse(
+                json.dumps(
+                    {
+                        "success": False,
+                        "message": "Failure when attempting to render template.",
+                    }
+                )
+            )
