@@ -38,14 +38,16 @@ class JupyterLabRender:
 
         util_client = get_client(group_token)
 
-        # Get the file path first
-        class_file_path = inspect.getfile(self.__class__)
-        # Convert the string to a pathlib Path
-        class_file_path = Path(class_file_path)
-        # Grab the parent path and append template.json
-        template_file_path = class_file_path.parent / "template.json"
-        # Load that filepath since it should be the json template
-        template_json = json.load(open(template_file_path))
+        template_json = body.get("template", None)
+        if template_json is None:
+            class_file_path = inspect.getfile(self.__class__)
+            # Convert the string to a pathlib Path
+            class_file_path = Path(class_file_path)
+            # Grab the parent path and append template.json
+            template_file_path = class_file_path.parent / "template.json"
+            # Load that filepath since it should be the json template
+            template_json = json.load(open(template_file_path))
+
         cells = []
         for template_item in template_json:
             cell_type = template_item["cell_type"]
