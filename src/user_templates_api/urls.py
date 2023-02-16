@@ -32,4 +32,9 @@ urlpatterns = [
         views.TemplateView.as_view(),
         name="template",
     ),
+    path(
+        "test_templates/<str:template_type>/<str:template_format>/",
+        views.TestTemplateView.as_view(),
+        name="test_template",
+    ),
 ]
