@@ -21,6 +21,8 @@ class JupyterLabRender:
             cells = self.python_generate_template_data(data)
         elif metadata["template_format"] == "json":
             cells = self.json_generate_template_data(data)
+        elif metadata["template_format"] == "jinja":
+            cells = self.jinja_generate_template_data(data)
 
         nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
 
@@ -70,3 +72,23 @@ class JupyterLabRender:
                 cells.append(new_markdown_cell(template.render(body)))
 
         return cells
+
+    def jinja_generate_template_data(self, data):
+        django_engine = engines["django"]
+
+        group_token = data["group_token"]
+
+        data["util_client"] = get_client(group_token)
+
+        # Get the file path first
+        class_file_path = inspect.getfile(self.__class__)
+        # Convert the string to a pathlib Path
+        class_file_path = Path(class_file_path)
+        # Grab the parent path and append template.txt
+        template_file_path = class_file_path.parent / "template.txt"
+        # Load that filepath since it should be the json template
+        template_file = open(template_file_path)
+        template = django_engine.from_string(template_file.read())
+        rendered_template = template.render(data)
+
+        return rendered_template
