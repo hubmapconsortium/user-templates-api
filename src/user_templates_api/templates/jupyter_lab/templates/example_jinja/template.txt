@@ -1,0 +1,15 @@
+{% load jupyter_lab %}
+{% autoescape off %}
+{% jupyter_get_anndata_cells as anndata %}
+[
+{% jupyter_get_metadata_cells %},
+{% jupyter_get_file_cells %},
+{% if anndata != "" %}
+{{ anndata }},
+{% endif %}
+{
+  "cell_type": "code",
+  "source": "print('hello world!')"
+}
+]
+{% endautoescape %}
