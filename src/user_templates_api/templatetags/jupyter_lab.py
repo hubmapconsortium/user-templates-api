@@ -1,4 +1,5 @@
 from django import template
+
 import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
 
 register = template.Library()
