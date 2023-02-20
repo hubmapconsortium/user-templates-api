@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: HuBMAP User Templates API
   description: The User Templates API returns pre-defined templates to be used by interactive services (such as JupyterLab).
-  version: 1.0.0
+  version: 1.0.1
   termsOfService: 'https://hubmapconsortium.org'
   contact:
     name: HuBMAP Help Desk
@@ -72,6 +72,15 @@ components:
           type: array
           items:
             type: string
+    TestTemplateRequest:
+      type: object
+      properties:
+        uuids:
+          type: array
+          items:
+            type: string
+        template:
+          type: object
 paths:
   '/template_types/':
     get:
@@ -139,6 +148,39 @@ paths:
           'application/json':
             schema:
               $ref: '#/components/schemas/TemplateRequest'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostTemplateResponse'
+  '/test_templates/{template_type}/{template_format}/':
+    post:
+      tags:
+        - Test Templates
+      summary: Generate a template.
+      parameters:
+        - name: template_type
+          in: path
+          description: Type of template.
+          required: true
+          schema:
+             type: string
+             example: jupyter_lab
+        - name: template_format
+          in: path
+          description: Format of template.
+          required: true
+          schema:
+             type: string
+             example: json
+      requestBody:
+        description: Details provided to template for generation.
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/TestTemplateRequest'
       responses:
         "200":
           description: successful operation
