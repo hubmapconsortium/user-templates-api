@@ -1,0 +1,18 @@
+[
+  {
+    "cell_type": "template_cell",
+    "src": "get_metadata_cells"
+  },
+  {
+    "cell_type": "template_cell",
+    "src": "get_file_cells"
+  },
+  {
+    "cell_type": "template_cell",
+    "src": "get_anndata_cells"
+  },
+  {
+    "cell_type": "code_cell",
+    "src": "{% for uuid in uuids %} print('{{ uuid }}') {% endfor %}"
+  }
+]

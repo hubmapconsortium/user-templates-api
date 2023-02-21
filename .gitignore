@@ -1,4 +1,8 @@
+.env*
 .idea
 db.sqlite3
+docker-compose.yml
+config.json
+__pycache__/
 /venv/
 /src/config.json
