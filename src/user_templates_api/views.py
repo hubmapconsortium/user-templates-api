@@ -1,10 +1,11 @@
 import importlib
 import inspect
 import json
+from pathlib import Path
 
 from django.apps import apps
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views import View
 
 
@@ -198,3 +199,35 @@ class TestTemplateView(View):
                     }
                 )
             )
+
+
+class StatusView(View):
+    permission_classes = []
+
+    def get(self, request):
+        base_dir = Path(__file__).resolve().parent.parent
+        version_file_path = base_dir / "VERSION"
+        build_file_path = base_dir / "BUILD"
+
+        print(version_file_path)
+        print(build_file_path)
+
+        version = (
+            open(version_file_path).read().strip()
+            if version_file_path.exists()
+            else "invalid_version"
+        )
+        build = (
+            open(build_file_path).read().strip()
+            if build_file_path.exists()
+            else "invalid_build"
+        )
+
+        response_data = {
+            "message": "",
+            "success": True,
+            "version": version,
+            "build": build,
+        }
+
+        return JsonResponse(response_data)
