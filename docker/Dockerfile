@@ -6,6 +6,11 @@ LABEL description="HuBMAP User Templates API Service"
 WORKDIR /code
 ENV PYTHONUNBUFFERED=1
 COPY requirements.txt /tmp/
+COPY BUILD /code/
+COPY VERSION /code/
+COPY docker /code/docker/
+COPY docker/user_templates_api/nginx /etc/nginx
+COPY src /code/
 
 RUN echo $'[nginx-mainline]\n\
 name=nginx mainline repo\n\
@@ -35,5 +40,5 @@ RUN yum install -y yum-utils && \
 
 # The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime.
 # EXPOSE does not make the ports of the container accessible to the host.
-# Here 5001
+# Here 5000 is for the uwsgi socket, 8080 for nginx
 EXPOSE 5001
