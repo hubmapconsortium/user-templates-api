@@ -2,4 +2,6 @@
 
 python manage.py migrate
 
-gunicorn --bind=0.0.0.0:5001 --workers=8 user_templates_api.wsgi:application
+nginx -g 'daemon off;' &
+
+gunicorn --bind=0.0.0.0:5050 --workers=8 user_templates_api.wsgi:application
