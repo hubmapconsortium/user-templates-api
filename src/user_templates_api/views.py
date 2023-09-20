@@ -231,3 +231,13 @@ class StatusView(View):
         }
 
         return JsonResponse(response_data)
+
+
+class TagsView(View):
+    def get(self, request):
+        BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+
+        tags = json.load(open(BASE_DIR / ("tags.json")))
+        return HttpResponse(
+            json.dumps({"success": True, "message": "Success", "data": tags})
+        )
