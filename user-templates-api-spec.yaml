@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: HuBMAP User Templates API
   description: The User Templates API returns pre-defined templates to be used by interactive services (such as JupyterLab).
-  version: 1.0.1
+  version: 1.0.2
   termsOfService: 'https://hubmapconsortium.org'
   contact:
     name: HuBMAP Help Desk
@@ -14,6 +14,20 @@ servers:
   - url: "https://user-templates.api.hubmapconsortium.org/"
 components:
   schemas:
+    GetTagsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            sdk: HuBMAP Python SDK
+            api: HuBMAP API
     GetTemplateTypesResponse:
       type: object
       properties:
@@ -188,6 +202,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PostTemplateResponse'
+  '/tags/':
+    get:
+      tags:
+        - Tags
+      summary: Get tags available for querying
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTagsResponse'
 tags:
   - name: Templates
   - name: Template Types

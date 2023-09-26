@@ -33,7 +33,7 @@ class TemplateView(View):
 
         if not template_name:
             # TODO: Add support for checking is_multi_dataset_template field.
-            query_tags = request.GET.getlist("tags", [])
+            query_tags = request.GET.getlist("tags", None)
 
             for template_type_dir in (
                 templates_dir / template_type / "templates"
@@ -46,10 +46,9 @@ class TemplateView(View):
                 template_tags = template_metadata["tags"]
 
                 if query_tags and (set(template_tags) & set(query_tags)):
-                    response[template_type_dir.name] = {
-                        "template_title": template_metadata["title"],
-                        "description": template_metadata["description"],
-                    }
+                    response[template_type_dir.name] = template_metadata
+                elif not query_tags:
+                    response[template_type_dir.name] = template_metadata
         else:
             # This is meant to return an example template.
             template_metadata = json.load(
@@ -231,3 +230,13 @@ class StatusView(View):
         }
 
         return JsonResponse(response_data)
+
+
+class TagsView(View):
+    def get(self, request):
+        BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+
+        tags = json.load(open(BASE_DIR / ("tags.json")))
+        return HttpResponse(
+            json.dumps({"success": True, "message": "Success", "data": tags})
+        )
