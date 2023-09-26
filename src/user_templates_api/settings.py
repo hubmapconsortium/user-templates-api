@@ -129,8 +129,6 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "Authorization",
-]
+CORS_ALLOW_HEADERS = list(default_headers) + ["Authorization", "UWS-Authorization"]
 
 CORS_ALLOW_ALL_ORIGINS = True
