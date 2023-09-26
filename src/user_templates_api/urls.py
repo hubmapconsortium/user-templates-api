@@ -38,4 +38,5 @@ urlpatterns = [
         name="test_template",
     ),
     path("status/", views.StatusView.as_view(), name="status"),
+    path("tags/", views.TagsView.as_view(), name="tags"),
 ]
