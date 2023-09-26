@@ -6,11 +6,6 @@ LABEL description="HuBMAP User Templates API Service"
 WORKDIR /code
 ENV PYTHONUNBUFFERED=1
 COPY requirements.txt /tmp/
-COPY BUILD /code/
-COPY VERSION /code/
-COPY docker /code/docker/
-COPY docker/user_templates_api/nginx /etc/nginx
-COPY src /code/
 
 RUN echo $'[nginx-mainline]\n\
 name=nginx mainline repo\n\
