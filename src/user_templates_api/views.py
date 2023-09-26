@@ -46,15 +46,9 @@ class TemplateView(View):
                 template_tags = template_metadata["tags"]
 
                 if query_tags and (set(template_tags) & set(query_tags)):
-                    response[template_type_dir.name] = {
-                        "template_title": template_metadata["title"],
-                        "description": template_metadata["description"],
-                    }
+                    response[template_type_dir.name] = template_metadata
                 elif not query_tags:
-                    response[template_type_dir.name] = {
-                        "template_title": template_metadata["title"],
-                        "description": template_metadata["description"],
-                    }
+                    response[template_type_dir.name] = template_metadata
         else:
             # This is meant to return an example template.
             template_metadata = json.load(
