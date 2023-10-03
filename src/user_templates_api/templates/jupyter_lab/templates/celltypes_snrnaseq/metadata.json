@@ -1,0 +1,11 @@
+{
+    "title": "Visualization of cell types for scRNA-seq",
+    "description": "This notebook shows users how to retrieve the cell types from scRNA-seq data and load these into an interactive altair visualization.",
+    "tags": [
+      "visualization",
+      "altair",
+      "test"
+    ],
+    "is_multi_dataset_template": true,
+    "template_format": "json"
+  }

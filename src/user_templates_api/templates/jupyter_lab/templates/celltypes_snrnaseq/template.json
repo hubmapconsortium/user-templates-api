@@ -1,0 +1,104 @@
+[
+    {
+        "cell_type": "code",
+        "execution_count": null,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "!pip install --upgrade pip\n",
+            "!pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn networkx obonet anndata zarr aiohttp fsspec ipython"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": null,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "from csv import DictReader, excel_tab\n",
+            "from io import StringIO\n",
+            "import requests\n",
+            "import pandas as pd\n",
+            "\n",
+            "# These are the UUIDS of the search results when this notebook was created:\n",
+            "\n",
+            "uuids = []"
+        ]
+    },
+    {
+        "attachments": {},
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# Cell type composition workspace"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": null,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import os\n",
+            "import requests\n",
+            "import itertools\n",
+            "from collections import Counter\n",
+            "\n",
+            "import numpy as np\n",
+            "import pandas as pd\n",
+            "\n",
+            "from matplotlib import pyplot as plt\n",
+            "import seaborn as sns\n",
+            "import altair as alt\n",
+            "\n",
+            "import networkx as nx\n",
+            "import obonet\n",
+            "\n",
+            "import anndata as ad\n",
+            "import zarr\n"
+        ]
+    },
+    {
+        "attachments": {},
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## UUID to hubmap id\n",
+            "Generally, hubmap id's are a bit more readable than uuids."
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": null,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "def get_uuid_to_hubmap(uuids): \n",
+            "    '''\n",
+            "    Retrieve a dictionary mapping uuids to hubmap ids.\n",
+            "\n",
+            "    Parameters\n",
+            "    ----------\n",
+            "    uuids : list\n",
+            "        list with uuids\n",
+            "    \n",
+            "    Returns\n",
+            "    -------\n",
+            "    dictionary mapping uuids to hubmap ids\n",
+            "    '''\n",
+            "    ## Fetch metadata, and read it into a dataframe\n",
+            "    response = requests.post(\n",
+            "        \"https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv\", json={\"uuids\": uuids}\n",
+            "    )\n",
+            "    metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))\n",
+            "    metadata = pd.DataFrame(metadata[1:])\n",
+            "\n",
+            "    ## Create mapping from uuid to hubmap id\n",
+            "    uuid_to_hubmap = dict(zip(metadata['uuid'], metadata['hubmap_id']))\n",
+            "    return uuid_to_hubmap\n",
+            "\n",
+            "uuid_to_hubmap = get_uuid_to_hubmap(uuids)\n",
+            "uuid_to_hubmap"
+        ]
+    }
+]
