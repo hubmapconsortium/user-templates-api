@@ -1,0 +1,16 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "045dfedd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# These are the UUIDS of the search results when this notebook was created:\n",
+    "\n",
+    "uuids = $uuids"
+   ]
+  }
+ ]
+}
