@@ -33,6 +33,7 @@ def get_anndata_cells(uuids, util_client):
         else []
     )
 
+
 def get_uuid_cells(uuids, util_client):
     return (
         _get_cells("uuids.txt", uuids=uuids)
