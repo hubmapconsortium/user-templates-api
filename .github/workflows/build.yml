@@ -36,5 +36,6 @@ jobs:
           commit_message: "Auto generate BUILD file."
           # Files to add separated by space
           files: BUILD
+          force: true
         
         
