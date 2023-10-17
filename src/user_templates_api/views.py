@@ -89,7 +89,7 @@ class TemplateView(View):
 
                 group_token = auth_helper.getAuthorizationTokens(request.headers)
 
-                if group_token is not str:
+                if not isinstance(group_token, str):
                     response = HttpResponse("Invalid token")
                     response.status_code = 401
                     return response
@@ -158,7 +158,7 @@ class TestTemplateView(View):
 
             group_token = auth_helper.getAuthorizationTokens(request.headers)
 
-            if group_token is not str:
+            if not isinstance(group_token, str):
                 response = HttpResponse("Invalid token")
                 response.status_code = 401
                 return response

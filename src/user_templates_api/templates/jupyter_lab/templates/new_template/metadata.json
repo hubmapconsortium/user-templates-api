@@ -1,0 +1,10 @@
+{
+    "title": "A descriptive title",
+    "description": "A description of the notebook",
+    "tags": [
+        "test",
+        "anndata"
+    ], 
+    "is_multi_dataset_template": true,
+    "template_format": "jinja"
+  }
