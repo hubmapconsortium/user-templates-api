@@ -1,9 +1,9 @@
 {
-    "title": "Compress Anndata",
-    "description": "This notebook shows how to manipulate anndata objects in h5ad files.",
-    "tags": [
-      "anndata"
-    ],
-    "is_multi_dataset_template": true,
-    "template_format": "jinja"
-  }
+  "title": "Compress Anndata",
+  "description": "This notebook shows how to manipulate anndata objects in h5ad files.",
+  "tags": [
+    "anndata"
+  ],
+  "is_multi_dataset_template": true,
+  "template_format": "jinja"
+}
