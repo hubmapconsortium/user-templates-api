@@ -34,6 +34,10 @@ def get_anndata_cells(uuids, util_client):
     )
 
 
+def get_uuid_cells(uuids, util_client):
+    return _get_cells("uuids.txt", uuids=uuids)
+
+
 def _limit_to_zarr_files(uuids_to_files):
     """
     >>> uuids_to_files = {'1234': ['asdf/.zarr/abc', 'asdf/.zarr/xyz', 'other']}
