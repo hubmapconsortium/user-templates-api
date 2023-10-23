@@ -72,7 +72,10 @@ class TemplateView(View):
 
     def post(self, request, template_type, template_name=""):
         if not template_name:
-            return HttpResponse("Missing template_name", status=500)
+            return HttpResponse(
+                json.dumps({"success": False, "message": "Missing template_name"}),
+                status=500,
+            )
         else:
             # Call utility functions for rendering that template. This is necessary as some templates
             # might have their own python scripts to actually generate the script.
@@ -90,9 +93,10 @@ class TemplateView(View):
                 group_token = auth_helper.getAuthorizationTokens(request.headers)
 
                 if not isinstance(group_token, str):
-                    response = HttpResponse("Invalid token")
-                    response.status_code = 401
-                    return response
+                    return HttpResponse(
+                        json.dumps({"success": False, "message": "Invalid token"}),
+                        status=401,
+                    )
 
                 data = {
                     "group_token": group_token,
@@ -137,7 +141,8 @@ class TemplateView(View):
                             "success": False,
                             "message": "Failure when attempting to render template.",
                         }
-                    )
+                    ),
+                    status=500,
                 )
 
 
@@ -159,9 +164,10 @@ class TestTemplateView(View):
             group_token = auth_helper.getAuthorizationTokens(request.headers)
 
             if not isinstance(group_token, str):
-                response = HttpResponse("Invalid token")
-                response.status_code = 401
-                return response
+                return HttpResponse(
+                    json.dumps({"success": False, "message": "Invalid token"}),
+                    status=401,
+                )
 
             data = {
                 "group_token": group_token,
@@ -196,7 +202,8 @@ class TestTemplateView(View):
                         "success": False,
                         "message": "Failure when attempting to render template.",
                     }
-                )
+                ),
+                status=500,
             )
 
 
@@ -207,9 +214,6 @@ class StatusView(View):
         base_dir = Path(__file__).resolve().parent.parent
         version_file_path = base_dir / "VERSION"
         build_file_path = base_dir / "BUILD"
-
-        print(version_file_path)
-        print(build_file_path)
 
         version = (
             open(version_file_path).read().strip()
