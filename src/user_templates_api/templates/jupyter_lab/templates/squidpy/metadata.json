@@ -1,0 +1,11 @@
+{
+    "title": "Analyse neighborhoods of spatial data with squidpy",
+    "description": "Use squidpy to analyse and visualize neighborhoods of clusters of spatial data.",
+    "tags": [
+        "salmon",
+        "visualize",
+        "anndata"
+    ], 
+    "is_multi_dataset_template": true,
+    "template_format": "jinja"
+  }
