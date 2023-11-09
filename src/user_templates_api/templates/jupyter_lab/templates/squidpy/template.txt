@@ -1,0 +1,274 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "6988ba18-7cf6-4a56-a0c5-108664901c2a",
+   "metadata": {},
+   "source": [
+    "# Analyse neighborhoods of spatial data with squidpy\n",
+    "This notebook shows how to use common squidpy functions to analyse neighborhoods for spatial data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c5c46e89-5850-406a-9b01-2f0e90430831",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!pip install squidpy anndata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "db4009d7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# One of squidpy's functions depends on 'is_categorical_dtype' which generates a FutureWarning, \n",
+    "# but as it's called many times, the notebook becomes crowded with this same warning. \n",
+    "# This cell surpresses this warning.\n",
+    "import warnings\n",
+    "warnings.simplefilter(action='ignore', category=FutureWarning)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0ca3a4a0-d63d-43d4-bef9-1684b9b3ce5b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import anndata as ad\n",
+    "import squidpy as sq"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d0433c61-7984-420b-b4ef-20046639c80f",
+   "metadata": {},
+   "source": [
+    "This notebook only shows the analysis for one sample. If more than one dataset are linked, the first is automatically selected, but can be changed below. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f178e4e7-2d5c-41f6-80b3-4aab23cb8e35",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# linked datasets\n",
+    "uuids = ['a1d17fdd270a69c813b872a927dfa5f3', 'cdf9127efdfc96189845c35244d4d8ab', 'fcd7a8d45be34fdccb8fa400ea81a331']\n",
+    "\n",
+    "# selected dataset\n",
+    "uuid = uuids[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "80937131-7daf-412f-96e7-c677384b72a7",
+   "metadata": {},
+   "source": [
+    "We first [read in](https://anndata.readthedocs.io/en/latest/generated/anndata.read_h5ad.html) the anndata of this dataset."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b342af9c-3367-42ba-a937-faa9d61b7fca",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata = ad.read_h5ad('./datasets/' + uuid + '/secondary_analysis.h5ad')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7e133c4c-2f28-4994-986e-a4a0d7d13f69",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "690dfd2e-3c83-438b-9d0b-0a25da589351",
+   "metadata": {},
+   "source": [
+    "Based on the anndata object we set the spatial and cluster key. The spatial key should be available in obsm, and for most datasets it will be 'X_spatial'. The cluster key indicated the clusters we are interested in. Change this to e.g. Leiden to see another type of clustering. The cluster key should be available in obs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c16930ed-4dd8-4eca-9e3f-b95eb5f721ba",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "spatial_key = \"X_spatial\"\n",
+    "cluster_key = \"predicted_label\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40e7af35-ad78-48b0-aef1-0c410a55d237",
+   "metadata": {},
+   "source": [
+    "Most analyses with squidpy depend on the calculated spatial_connectivities and spatial_distances, which can be retrieved by [sq.gr.spatial_neighbors](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors). This mutates the anndata object, so it doesn't return anything."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8dd46f6b-59f0-426a-a380-edcd0c294f40",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sq.gr.spatial_neighbors(adata, coord_type=\"generic\", spatial_key=spatial_key)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8259b094-8312-496c-b758-99d5ee0a6e9e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4fe37588-280d-43b5-afed-9e815a47fa14",
+   "metadata": {},
+   "source": [
+    "We can now look into neighborhood enrichment. We first calculate this with [sq.gr.nhood_enrichment](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.nhood_enrichment.html#squidpy.gr.nhood_enrichment), we can then plot this with [sq.pl.nhood_enrichment](https://squidpy.readthedocs.io/en/stable/api/squidpy.pl.nhood_enrichment.html#squidpy.pl.nhood_enrichment)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0b475461-1529-4523-9225-39e476e9496e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sq.gr.nhood_enrichment(adata, cluster_key=cluster_key)\n",
+    "sq.pl.nhood_enrichment(adata, cluster_key=cluster_key)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "39cd9b96-f2a6-4842-8df5-346c2f9d66e8",
+   "metadata": {},
+   "source": [
+    "From this we can see the enrichment between our clusters."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d5fd6598-0ae1-4703-9444-e67a1e0ea621",
+   "metadata": {},
+   "source": [
+    "These are now added to the anndata object under uns, though we could run the following to directly retrieve the z-scores:\n",
+    "\n",
+    "_Note that this is also possible for other functions, copy=True will return the calculated results directly, whereas the default copy=False will mutate the anndata object_"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e8302e47-adc7-4d0d-a01b-f47b91ac9310",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# z_scores = sq.gr.nhood_enrichment(adata, cluster_key='predicted_label', copy=True)\n",
+    "# z_scores"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "58eeb40f-98bc-492f-9ecf-56875b681be7",
+   "metadata": {},
+   "source": [
+    "We can also look at the interaction matrix, by first running [sq.gr.interaction_matrix](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.interaction_matrix.html#squidpy.gr.interaction_matrix) and then plotting with [sq.pl.interaction_matrix](https://squidpy.readthedocs.io/en/stable/api/squidpy.pl.interaction_matrix.html#squidpy.pl.interaction_matrix). "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6af083a3-0cc9-408d-8886-9f8a68ed4c33",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sq.gr.interaction_matrix(adata,  cluster_key=cluster_key)\n",
+    "sq.pl.interaction_matrix(adata,  cluster_key=cluster_key)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9c6a8611-9fac-4c6b-a12e-1924a047f01a",
+   "metadata": {},
+   "source": [
+    "Now we want to focus on one specific cell type or cluster, and calculate the co-occurrence with this celltype. We can use [sq.gr.co_occurrence](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.co_occurrence.html#squidpy.gr.co_occurrence) and [sq.pl.co_occurrence](https://squidpy.readthedocs.io/en/stable/api/squidpy.pl.co_occurrence.html#squidpy.pl.co_occurrence) for this."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0594e4a4-3757-4022-8f82-193135e7a233",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cluster_of_interest = \"neutrophil\"\n",
+    "\n",
+    "sq.gr.co_occurrence(adata, spatial_key=spatial_key, cluster_key=cluster_key)\n",
+    "sq.pl.co_occurrence(adata, cluster_key=cluster_key, clusters=cluster_of_interest)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "db00e4a2-53aa-4fd1-875f-9a2ea6a72ed6",
+   "metadata": {},
+   "source": [
+    "We can determine [Ripley's K- or L-function](https://en.wikipedia.org/wiki/Spatial_descriptive_statistics#Ripley's_K_and_L_functions) to calculate spatial homogeneity, with [sq.gr.ripley](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.ripley.html#squidpy.gr.ripley) and [sq.pl.ripley](https://squidpy.readthedocs.io/en/stable/api/squidpy.pl.ripley.html#squidpy.pl.ripley)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a12668dc-4ee2-4dff-8afb-3d35e0af3513",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mode = \"L\"\n",
+    "sq.gr.ripley(adata, cluster_key=cluster_key, spatial_key=spatial_key, mode=mode, max_dist=500)\n",
+    "sq.pl.ripley(adata, cluster_key=cluster_key, mode=mode)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.18"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
