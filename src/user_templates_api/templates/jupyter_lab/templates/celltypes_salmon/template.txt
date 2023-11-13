@@ -1,0 +1,613 @@
+{
+ "cells": [
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Determining the composition of cell types in Salmon data\n",
+    "This notebook shows how to extract cell types from data analysed with salmon, and visualize them in several ways with Altair."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# !pip install --upgrade pip\n",
+    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn anndata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "import requests\n",
+    "import json\n",
+    "\n",
+    "import os\n",
+    "import os.path\n",
+    "\n",
+    "from csv import DictReader, excel_tab\n",
+    "from io import StringIO\n",
+    "\n",
+    "import pandas as pd\n",
+    "\n",
+    "from matplotlib import pyplot as plt\n",
+    "import seaborn as sns\n",
+    "import altair as alt\n",
+    "\n",
+    "import anndata as ad"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# One of pandas's functions depends on 'convert_dtype' which generates a FutureWarning, \n",
+    "# but as it's called many times, the notebook becomes crowded with this same warning. \n",
+    "# This cell surpresses this warning.\n",
+    "warnings.simplefilter(action='ignore', category=FutureWarning)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Linked datasets\n",
+    "The following datasets were symlinked to the workspace when this template was added:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# linked datasets\n",
+    "uuids = []\n",
+    "\n",
+    "# required file_types\n",
+    "required_filestypes = ['secondary_analysis.h5ad']\n",
+    "\n",
+    "# search_api\n",
+    "search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The following checks if the datasets are compatible with this template."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This template is created for particular datatypes only.\n",
+    "# This functions checks for each uuids above whether they have the correct datatypes.\n",
+    "\n",
+    "def check_template_compatibility(uuids, accepted_datatypes=None, required_filetypes=None, search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'): \n",
+    "    '''\n",
+    "    For a set of HuBMAP UUIDs, check if valid, and return valid UUIDs.\n",
+    "    Checks if UUIDs are present in the search API. \n",
+    "    If accepted_datatypes is defined, checks if UUIDs are of any of the datatypes in accepted_datatypes.\n",
+    "    If required_filetypes is defined, checks if UUIDs have all of the required filetypes in required_filetypes.\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    uuids : array of string\n",
+    "        HuBMAP UUIDs to be checked\n",
+    "    accepted_datatypes: array of string, optional\n",
+    "        accepted datatypes for template\n",
+    "    required_filetypes: array of string, optional\n",
+    "        required datatypes for template\n",
+    "    search_api: string, optional\n",
+    "        URL of search API\n",
+    "\n",
+    "    Returns\n",
+    "    -------\n",
+    "    array of string\n",
+    "        valid UUIDs\n",
+    "    '''\n",
+    "    hits = json.loads(\n",
+    "        requests.post(\n",
+    "            search_api,\n",
+    "            json={\n",
+    "                'size': 10000,\n",
+    "                'query': {'ids': {'values': uuids}},\n",
+    "                '_source': ['files', 'data_types']\n",
+    "            }, \n",
+    "        ).text\n",
+    "    )['hits']['hits']\n",
+    "\n",
+    "    # create mapping for uuid to file_types and data_types\n",
+    "    uuid_to_files = {}\n",
+    "    uuid_to_datatypes = {}\n",
+    "    for hit in hits:\n",
+    "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
+    "        uuid_to_files[hit['_id']] = file_paths\n",
+    "\n",
+    "        hit_data_type = hit['_source']['data_types']\n",
+    "        uuid_to_datatypes[hit['_id']] = hit_data_type\n",
+    "    \n",
+    "    # save uuids without warnings\n",
+    "    accepted_uuids = uuids.copy()\n",
+    "\n",
+    "    # remove unvalid uuids\n",
+    "    for uuid in uuids: \n",
+    "        # check if all uuids are found in the search api\n",
+    "        if uuid not in uuid_to_files.keys(): \n",
+    "            warnings.warn('Dataset with UUID \"' + uuid + '\" not found in Search API')\n",
+    "            accepted_uuids.remove(uuid)\n",
+    "            continue\n",
+    "\n",
+    "        if required_filetypes is not None: \n",
+    "            # check if file_types for each uuid are in required_filetypes\n",
+    "            file_types = uuid_to_files[uuid]\n",
+    "            for required_file_type in required_filetypes:\n",
+    "                if required_file_type not in file_types:\n",
+    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" does not have required file type: ' + required_file_type)\n",
+    "                    if uuid in accepted_uuids:\n",
+    "                        accepted_uuids.remove(uuid)\n",
+    "\n",
+    "        if accepted_datatypes is not None: \n",
+    "            # check if data_types for each uuid are in accepted_datatypes\n",
+    "            data_types = uuid_to_datatypes[uuid]\n",
+    "            for data_type in data_types:\n",
+    "                if data_type not in accepted_datatypes: \n",
+    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" has unaccepted data type: ' + data_type)\n",
+    "                    if uuid in accepted_uuids:\n",
+    "                        accepted_uuids.remove(uuid)\n",
+    "                    continue\n",
+    "    \n",
+    "    return accepted_uuids"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "uuids = check_template_compatibility(uuids, required_filetypes=required_filestypes, search_api=search_api)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## UUID to hubmap id\n",
+    "Generally, hubmap id's are a bit more readable than uuids. This is nicer for the plots we will make. We can make a mapping as follows."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_uuid_to_hubmap(uuids): \n",
+    "    '''\n",
+    "    Retrieve a dictionary mapping uuids to hubmap ids.\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    uuids : list\n",
+    "        list with uuids\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    dictionary mapping uuids to hubmap ids\n",
+    "    '''\n",
+    "    ## Fetch metadata, and read it into a dataframe\n",
+    "    response = requests.post(\n",
+    "        'https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv', json={'uuids': uuids}\n",
+    "    )\n",
+    "    metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))\n",
+    "    metadata = pd.DataFrame(metadata[1:])\n",
+    "\n",
+    "    ## Create mapping from uuid to hubmap id\n",
+    "    uuid_to_hubmap = dict(zip(metadata['uuid'], metadata['hubmap_id']))\n",
+    "    return uuid_to_hubmap\n",
+    "\n",
+    "uuid_to_hubmap = get_uuid_to_hubmap(uuids)\n",
+    "uuid_to_hubmap"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Loading data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_counts_from_adata_single(adata, index = 0, clid = False): \n",
+    "    ''''\n",
+    "    Calculate cell counts from anndata object. \n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    adata : anndata object\n",
+    "    index : str or int, optional\n",
+    "        name for sample in dataframe\n",
+    "    clid : Boolean, optional\n",
+    "        Boolean indicating if adata contains CLID or not (ASCT-B). Default: False.\n",
+    "\n",
+    "    Returns\n",
+    "    -------\n",
+    "    dataframe with cell count and cell fraction for each cell type in sample\n",
+    "    '''\n",
+    "    if(clid):\n",
+    "        colname_predicted_id = 'predicted_CLID'\n",
+    "        colname_predicted_label = 'predicted_label'\n",
+    "        df_adata = adata.obs[[colname_predicted_id, colname_predicted_label]].value_counts().to_frame().reset_index().rename(columns={colname_predicted_id:'cell_type_CLID', colname_predicted_label:'cell_type_label', 'count':'cell_count'})\n",
+    "    else: \n",
+    "        colname_predicted_label = 'predicted.ASCT.celltype'\n",
+    "        df_adata = adata.obs[[colname_predicted_label]].value_counts().to_frame().reset_index().rename(columns={colname_predicted_label:'cell_type_label', 'count':'cell_count'})\n",
+    "        df_adata['cell_type_CLID'] = 'unknown'\n",
+    "        \n",
+    "    df_adata['sample_id'] = index\n",
+    "    df_adata['sample_n_cat'] = df_adata.shape[0]\n",
+    "    df_adata['sample_count'] = df_adata['cell_count'].sum()\n",
+    "    df_adata['cell_fraction'] = df_adata['cell_count'] / df_adata['sample_count']\n",
+    "    df_adata[['sample_id', 'cell_type_CLID', 'cell_type_label', 'cell_count', 'cell_fraction', 'sample_count', 'sample_n_cat']]\n",
+    "    return df_adata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def load_anndata(uuids):\n",
+    "    '''\n",
+    "    For a list of uuids, retrieve anndata and wrangle to dataframe of cell counts with standard structure\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    uuids : list of strings\n",
+    "        list of uuids for which to retrieve data\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    adata_dict : dict \n",
+    "    df_adata_dict : dict\n",
+    "    df_adata_comb : pandas dataframe\n",
+    "    '''\n",
+    "\n",
+    "    adata_dict = {}\n",
+    "    df_adata_dict = {}\n",
+    "\n",
+    "    all_clid = None\n",
+    "\n",
+    "    uuid_to_hubmap = get_uuid_to_hubmap(uuids)\n",
+    "\n",
+    "    # can't loop over a single uuid \n",
+    "    if(type(uuids) == str):\n",
+    "        uuids = [uuids]\n",
+    "\n",
+    "    for uuid in uuids: \n",
+    "        path = './datasets/' + uuid + '/secondary_analysis.h5ad'\n",
+    "        if os.path.isfile(path):\n",
+    "            adata_i = ad.read_h5ad('./datasets/' + uuid + '/secondary_analysis.h5ad')\n",
+    "        else:\n",
+    "            warnings.warn('No anndata for dataset with UUID \" ' + uuid +'\".')\n",
+    "            continue\n",
+    "\n",
+    "        if ('predicted_CLID' not in adata_i.obs.columns) and ('predicted.ASCT.celltype' not in adata_i.obs.columns):\n",
+    "            warnings.warn('Dataset with UUID \" ' + uuid + '\" does not have labels.')\n",
+    "            continue\n",
+    "        \n",
+    "        hubmap_id = uuid_to_hubmap[uuid]\n",
+    "        adata_dict[hubmap_id] = adata_i\n",
+    "\n",
+    "        clid = 'predicted_CLID' in adata_i.obs.columns\n",
+    "        if(all_clid == None):\n",
+    "            all_clid = clid\n",
+    "        if(clid != all_clid):\n",
+    "            warnings.warn('Not all datatypes have the same annotation (ASCT / CLID). Return empty.')\n",
+    "            return None, None, None\n",
+    "\n",
+    "        df_adata_i = get_counts_from_adata_single(adata_i, hubmap_id, clid = clid)\n",
+    "        df_adata_dict[hubmap_id] = df_adata_i\n",
+    "    \n",
+    "    if len(df_adata_dict) == 0:\n",
+    "        df_adata_comb = None\n",
+    "    else: \n",
+    "        df_adata_comb = pd.concat(df_adata_dict).reset_index(drop=True)\n",
+    "\n",
+    "    return adata_dict, df_adata_dict, df_adata_comb"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata_i = ad.read_h5ad('./datasets/' + uuids[1] + '/secondary_analysis.h5ad')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Examining one sample\n",
+    "We start by examining the first of the datasets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "uuid = uuids[0]\n",
+    "\n",
+    "adata_dict_one, df_adata_dict_one, df_adata_comb_one = load_anndata(uuid)\n",
+    "adata = adata_dict_one[uuid_to_hubmap[uuid]]\n",
+    "adata"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We first visualize the UMAP dimensionality reduction."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "umap = adata.obsm['X_umap']\n",
+    "\n",
+    "if 'predicted_label' in adata.obs.columns:\n",
+    "    labels = adata.obs['predicted_label']\n",
+    "else: \n",
+    "    labels = adata.obs['predicted.ASCT.celltype']\n",
+    "\n",
+    "umap_with_labels = pd.DataFrame({'X': umap[:,0], 'Y': umap[:,1], 'category': labels})\n",
+    "groups = umap_with_labels.groupby('category', observed=False)\n",
+    "for name, group in groups:\n",
+    "    plt.plot(group['X'], group['Y'], marker='.', linestyle='', label=name)\n",
+    "plt.xlabel('UMAP 1')\n",
+    "plt.ylabel('UMAP 2')\n",
+    "plt.legend(bbox_to_anchor=(1,1), title = 'Cell type')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can display the composition of cell types in various ways. Let's first make a stacked bar chart."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "g1 = alt.Chart(df_adata_comb_one).mark_bar().encode(\n",
+    "    x = alt.X('sample_id:O', axis = alt.Axis(title = 'HuBMAP ID')),\n",
+    "    y = alt.Y('cell_fraction:Q', axis = alt.Axis(title ='Fraction of cells'), scale=alt.Scale(domain=[0, 1])),\n",
+    "    color = alt.Color('cell_type_label:N', sort = 'y', legend = alt.Legend(title='Cell type')),\n",
+    "    order = alt.Order('cell_fraction', sort = 'descending'),\n",
+    "    tooltip=['cell_type_CLID', 'cell_type_label', 'cell_fraction']\n",
+    ").properties(\n",
+    "    title = 'Composition of cell types'\n",
+    ")\n",
+    "\n",
+    "g1"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Since there are many very small fractions, we might want to collapse those together."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def combine_other_fractions(df, threshold):\n",
+    "    '''\n",
+    "    Given a threshold, combine all cell types with a fraction below this threshold together into one row called 'other'. \n",
+    "    Set 'cell_fraction_sort' for dataframe for sorting in Altair (to make sure 'other' is always on the bottom)\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    df : pandas dataframe\n",
+    "        counts dataframe\n",
+    "    threshold : double\n",
+    "        threshold under which to collapse cell type\n",
+    "\n",
+    "    Returns\n",
+    "    -------\n",
+    "    pandas dataframe with collapsed row 'other'\n",
+    "    '''\n",
+    "    keep = df[df['cell_fraction'] >= threshold]\n",
+    "    keep['cell_fraction_sort'] = keep['cell_fraction']\n",
+    "    removed = df[df['cell_fraction'] < threshold]\n",
+    "    \n",
+    "    other = removed.groupby(['sample_id']).agg({'cell_type_CLID':'first', 'cell_type_label':'first', 'cell_count': 'sum', 'sample_id': 'first', 'sample_n_cat': 'first', 'sample_count': 'first', 'cell_fraction': 'sum'})\n",
+    "    other['cell_type_CLID'] = 'other'\n",
+    "    other['cell_type_label'] = 'other'\n",
+    "    other['cell_fraction_sort'] = 0\n",
+    "    other = other.reset_index(drop = True)\n",
+    "    \n",
+    "    comb = pd.concat([keep, other])\n",
+    "\n",
+    "    return comb"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "combine_other = True\n",
+    "threshold = 0.01\n",
+    "\n",
+    "if combine_other:\n",
+    "    df_adata_comb_one = combine_other_fractions(df_adata_comb_one, threshold)"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "With only one sample, we can also show this as a non-stacked bar chart. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bars = alt.Chart(df_adata_comb_one).mark_bar().encode(\n",
+    "    x = alt.X('cell_fraction:Q', axis = alt.Axis(title ='Fraction of cells'), scale=alt.Scale(domain=[0, 1])),\n",
+    "    y = alt.Y('cell_type_label:N', sort = {'field': 'cell_fraction_sort', 'order': 'descending'}, axis = alt.Axis(title = 'HuBMAP ID')),\n",
+    "    tooltip=['cell_type_label', 'cell_fraction']\n",
+    ")\n",
+    "\n",
+    "text = bars.mark_text(\n",
+    "    align='left',\n",
+    "    baseline='middle',\n",
+    "    dx=3 \n",
+    ").encode(\n",
+    "    text=alt.Text('cell_fraction:Q', format = '.0000')\n",
+    ")\n",
+    "\n",
+    "g2 = (bars + text).properties(\n",
+    "    title = 'Composition of cell types'\n",
+    ")\n",
+    "\n",
+    "g2"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Examining all samples\n",
+    "Now we look at all samples. First, we will again create a stacked bar chart."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata_dict_comb, df_adata_dict_comb, df_adata_comb = load_anndata(uuids)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## stacked bar chart\n",
+    "g3 = alt.Chart(df_adata_comb).mark_bar().encode(\n",
+    "    x = alt.X('sample_id:O', axis = alt.Axis(title = 'ID')),\n",
+    "    y = alt.Y('cell_fraction:Q', axis = alt.Axis(title ='Fraction of cells'), scale=alt.Scale(domain=[0, 1])),\n",
+    "    color = alt.Color('cell_type_label:N', sort = 'y', legend = alt.Legend(title='Cell type')),\n",
+    "    order = alt.Order('cell_fraction', sort = 'descending'),\n",
+    "    tooltip=['sample_id',  'cell_fraction', 'cell_type_label']\n",
+    ")\n",
+    "\n",
+    "g3"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "With many samples, a stacked bar chart can become unreadable. Instead, we can also make a heatmap."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "g4 = alt.Chart(df_adata_comb).mark_rect().encode(\n",
+    "\n",
+    "    x = alt.X('cell_type_label:N', axis = alt.Axis(title = 'Cell type')),\n",
+    "    y = alt.Y('sample_id:O', axis = alt.Axis(title = 'Sample')),\n",
+    "    color = alt.Color('cell_fraction:Q', scale=alt.Scale(domain=[0, 1]), legend = alt.Legend(title='Fraction of cells')),\n",
+    "    tooltip=['cell_type_label', 'sample_id', 'cell_fraction']\n",
+    ").properties(\n",
+    ").interactive()\n",
+    "\n",
+    "g4"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
