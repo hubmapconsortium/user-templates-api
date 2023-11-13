@@ -8,5 +8,6 @@
   "altair": "Altair Viualization",
   "anndata": "Using anndata format",
   "salmon": "Spatial data analysed with Salmon",
-  "codex": "CODEX data"
+  "codex": "CODEX data",
+  "slide-seq": "Slide-seq data"
 }
