@@ -1,0 +1,11 @@
+{
+    "title": "Visualization of cell types for salmon data",
+    "description": "This notebook shows users how to retrieve the cell types from data analysed with Salmon and load these into an interactive altair visualization.",
+    "tags": [
+      "visualization",
+      "altair",
+      "salmon"
+    ],
+    "is_multi_dataset_template": true,
+    "template_format": "jinja"
+  }
