@@ -4,8 +4,8 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# Re-cluster SPRM output of CODEX data and visualize with Vitessce\n",
-    "This template shows how to cluster CODEX data and load a new clustering into Vitessce. \n"
+    "Cluster SPRM output of CODEX data and visualize with Vitessce\n",
+    "This template shows how to cluster CODEX data and load a new clustering into Vitessce. This template requires prior cell segmentation, and takes in the locations of cell (centers) and protein expression per cell. \n"
    ]
   },
   {
