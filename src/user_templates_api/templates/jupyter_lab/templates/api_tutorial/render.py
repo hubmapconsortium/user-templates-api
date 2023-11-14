@@ -5,7 +5,7 @@ from user_templates_api.utils.client import get_client
 
 class JupyterLabAPITutorialRender(JupyterLabRender):
     def python_generate_template_data(self, data):
-        uuids = data["body"]["uuids"]
+        uuids = data["uuids"]
 
         util_client = get_client(data["group_token"])
 
