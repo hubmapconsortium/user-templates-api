@@ -16,6 +16,7 @@ class JupyterLabRender:
         #  and use the appropriate method.
 
         metadata = data["metadata"]
+        data["uuids"] = data.get("uuids", [])
 
         if metadata["template_format"] == "python":
             cells = self.python_generate_template_data(data)
@@ -34,13 +35,12 @@ class JupyterLabRender:
     def json_generate_template_data(self, data):
         django_engine = engines["django"]
 
-        body = data["body"]
-        uuids = body["uuids"]
+        uuids = data["uuids"]
         group_token = data["group_token"]
 
         util_client = get_client(group_token)
 
-        template_json = body.get("template", None)
+        template_json = data.get("template")
         if template_json is None:
             class_file_path = inspect.getfile(self.__class__)
             # Convert the string to a pathlib Path
@@ -65,11 +65,11 @@ class JupyterLabRender:
                 template = django_engine.from_string(src)
                 # Need to do something w/ the source to make sure that it has its vars replaced
                 # Have to use append here since the nbformat cell object has an add/iadd function that is really a merge
-                cells.append(new_code_cell(template.render(body)))
+                cells.append(new_code_cell(template.render(data)))
             elif cell_type == "markdown_cell":
                 template = django_engine.from_string(src)
                 # Need to do something w/ the source to make sure that it has its vars replaced
-                cells.append(new_markdown_cell(template.render(body)))
+                cells.append(new_markdown_cell(template.render(data)))
 
         return cells
 
