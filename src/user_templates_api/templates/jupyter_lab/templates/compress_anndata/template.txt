@@ -34,7 +34,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "uuids = {{ uuids }}"
+    "uuids = {{ uuids | safe }}"
    ]
   },
   {
