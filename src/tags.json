@@ -9,5 +9,6 @@
   "anndata": "Using anndata format",
   "salmon": "Spatial data analysed with Salmon",
   "codex": "CODEX data",
-  "slide-seq": "Slide-seq data"
+  "slide-seq": "Slide-seq data",
+  "files": "Work with HuBMAP data files"
 }
