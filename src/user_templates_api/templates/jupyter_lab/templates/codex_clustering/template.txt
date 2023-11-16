@@ -56,7 +56,7 @@
    "outputs": [],
    "source": [
     "# linked datasets\n",
-    "uuids = {{ uuid | safe }}",
+    "uuids = {{ uuid | safe }}\n",
     "\n",
     "# accepted datatypes \n",
     "accepted_datatypes = ['codex_cytokit']\n",
