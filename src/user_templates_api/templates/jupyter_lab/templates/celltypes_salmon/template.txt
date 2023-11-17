@@ -71,7 +71,7 @@
    "outputs": [],
    "source": [
     "# linked datasets\n",
-    "uuids = []\n",
+    "uuids = {{ uuid | safe }}\n",
     "\n",
     "# required file_types\n",
     "required_filestypes = ['secondary_analysis.h5ad']\n",
