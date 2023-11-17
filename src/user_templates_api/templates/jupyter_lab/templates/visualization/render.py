@@ -39,7 +39,7 @@ class JupyterLabVisualizationRender(JupyterLabRender):
                 "## Linked datasets\n"
                 "For this template, symlinking is not required. "
                 "This template only visualizes one dataset, it will automatically select the first of the datasets."
-            ),  
+            ),
             *vitessce_conf.cells,
         ]
 
