@@ -20,7 +20,10 @@ class JupyterLabVisualizationRender(JupyterLabRender):
             or vitessce_conf.conf is None
             or vitessce_conf.cells is None
         ):
-            return {"success": False, "message": "Vitessce conf not found."}
+            vitessce_conf.cells = new_markdown_cell(
+                "## Error in visualization\n"
+                f"Vitessce visualization could not be displayed for dataset {uuid}."
+            )
 
         hubmap_id = entity["hubmap_id"]
         cells = [
