@@ -28,6 +28,6 @@ For the jinja format, the render.py as in this folder is sufficient.
 ## template.txt
 The actual template. This can be directly converted from .ipynb to .txt. If insertion of values is required, e.g. uuids, you can add them as follows: 
 ```sh
-uuids = {{ uuid | safe }}
+uuids = {{ uuids | safe }}
 ```
 An example can be found in the blank template.

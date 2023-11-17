@@ -65,7 +65,7 @@
    "outputs": [],
    "source": [
     "# linked datasets\n",
-    "uuids = {{ uuid | safe }}\n",
+    "uuids = {{ uuids | safe }}\n",
     "\n",
     "# accepted data_types\n",
     "accepted_datatypes = ['salmon_rnaseq_slideseq']\n",
