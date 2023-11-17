@@ -6,5 +6,6 @@
         "api"
     ], 
     "is_multi_dataset_template": true,
-    "template_format": "jinja"
+    "template_format": "jinja",
+    "is_hidden": false
   }
