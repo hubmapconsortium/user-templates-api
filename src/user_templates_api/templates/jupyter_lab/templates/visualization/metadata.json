@@ -6,5 +6,6 @@
     "visualization"
   ],
   "is_multi_dataset_template": false,
-  "template_format": "python"
+  "template_format": "python",
+  "is_hidden": false
 }
