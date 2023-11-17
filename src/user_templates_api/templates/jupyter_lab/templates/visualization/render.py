@@ -25,19 +25,21 @@ class JupyterLabVisualizationRender(JupyterLabRender):
                 f"Vitessce visualization could not be displayed for dataset {uuid}."
             )
 
-        hubmap_id = entity["hubmap_id"]
         cells = [
             new_markdown_cell(
-                f"Visualization for {hubmap_id}; "
-                "If this notebook is running in a HuBMAP workspace, the dataset is symlinked:"
+                "# Vitessce visualization for single dataset\n"
+                "This notebook shows a Vitessce visualization for a dataset."
             ),
-            new_code_cell(f"!ls datasets/{uuids}"),
-            new_markdown_cell("Visualization requires extra code to be installed:"),
             new_code_cell(
                 "!pip uninstall community flask albumentations -y "
                 "# Preinstalled on Colab; Causes version conflicts.\n"
                 f"!pip install vitessce[all]=={vitessce.__version__}"
             ),
+            new_markdown_cell(
+                "## Linked datasets\n"
+                "For this template, symlinking is not required. "
+                "This template only visualizes one dataset, it will automatically select the first of the datasets."
+            ),  
             *vitessce_conf.cells,
         ]
 
