@@ -7,7 +7,7 @@ register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def jupyter_get_metadata_cells(context):
-    uuids = context["body"]["uuids"]
+    uuids = context["uuids"]
     util_client = context["util_client"]
     cells = jl_utils.get_metadata_cells(uuids, util_client)
     cells_str = str(cells)
@@ -17,7 +17,7 @@ def jupyter_get_metadata_cells(context):
 
 @register.simple_tag(takes_context=True)
 def jupyter_get_file_cells(context):
-    uuids = context["body"]["uuids"]
+    uuids = context["uuids"]
     util_client = context["util_client"]
     cells = jl_utils.get_file_cells(uuids, util_client)
     cells_str = str(cells)
@@ -27,7 +27,7 @@ def jupyter_get_file_cells(context):
 
 @register.simple_tag(takes_context=True)
 def jupyter_get_anndata_cells(context):
-    uuids = context["body"]["uuids"]
+    uuids = context["uuids"]
     util_client = context["util_client"]
     cells = jl_utils.get_anndata_cells(uuids, util_client)
     if not cells:
