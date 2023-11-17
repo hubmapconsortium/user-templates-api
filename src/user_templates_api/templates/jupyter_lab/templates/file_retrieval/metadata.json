@@ -1,0 +1,11 @@
+{
+    "title": "Retrieve files with the search and assets API",
+    "description": "Use the search API to get information about datasets and use the assets API to retrieve files.",
+    "tags": [
+        "files",
+        "api"
+    ], 
+    "is_multi_dataset_template": true,
+    "template_format": "jinja",
+    "is_hidden": false
+  }
