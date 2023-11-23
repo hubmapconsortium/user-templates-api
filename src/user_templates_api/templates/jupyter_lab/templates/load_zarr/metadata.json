@@ -7,5 +7,5 @@
     ], 
     "is_multi_dataset_template": true,
     "template_format": "jinja",
-    "is_hidden": true
+    "is_hidden": false
   }
