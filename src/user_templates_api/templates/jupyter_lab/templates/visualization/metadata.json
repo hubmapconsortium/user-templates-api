@@ -7,5 +7,5 @@
   ],
   "is_multi_dataset_template": true,
   "template_format": "python",
-  "is_hidden": false
+  "is_hidden": true
 }
