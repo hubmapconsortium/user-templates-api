@@ -189,7 +189,7 @@ class ApiClient:
             vis_lifted_uuid = derived_entity["uuid"]
 
         elif not entity.get("files") or not entity.get("data_types"):
-            vitessce_conf = ConfCells(None, None)
+            vitessce_conf = ConfCells(None, [])
 
         # Otherwise, just try to visualize the data for the entity itself:
         else:
@@ -231,7 +231,7 @@ class ApiClient:
                             }
                         ],
                     },
-                    None,
+                    [],
                 )
 
         return VitessceConfLiftedUUID(

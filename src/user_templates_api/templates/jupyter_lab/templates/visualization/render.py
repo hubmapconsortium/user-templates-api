@@ -15,17 +15,14 @@ class JupyterLabVisualizationRender(JupyterLabRender):
         vitessce_conf = client.get_vitessce_conf_cells_and_lifted_uuid(
             entity
         ).vitessce_conf
-        if (
-            vitessce_conf is None
-            or vitessce_conf.conf is None
-            or vitessce_conf.cells is None
-        ):
-            vitessce_conf.cells = [
+
+        if not vitessce_conf or not vitessce_conf.conf or not vitessce_conf.cells:
+            vitessce_conf.cells.append(
                 new_markdown_cell(
                     "## Error in visualization\n"
                     f"Vitessce visualization could not be displayed for dataset {uuid}."
                 )
-            ]
+            )
 
         cells = [
             new_markdown_cell(
