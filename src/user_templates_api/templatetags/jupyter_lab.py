@@ -1,6 +1,7 @@
+import json
+
 from django import template
 
-import json
 import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
 
 register = template.Library()
