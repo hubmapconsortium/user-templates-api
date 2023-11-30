@@ -89,6 +89,8 @@ class JupyterLabRender:
         # Load that filepath since it should be the json template
         template_file = open(template_file_path)
         template = django_engine.from_string(template_file.read())
-        rendered_template = template.render(data)
+        rendered_template = template.render(data).strip()
+        rendered_template = json.loads(rendered_template) if rendered_template else {}
 
+        # Update this so that it returns actual JSON not text
         return rendered_template
