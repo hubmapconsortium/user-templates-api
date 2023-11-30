@@ -1,0 +1,11 @@
+{
+    "title": "Retrieve anndata from remote zarr storage",
+    "description": "This template shows how to work with the remote zarr stores for anndata in the HuBMAP Data Portal",
+    "tags": [
+        "zarr",
+        "anndata"
+    ], 
+    "is_multi_dataset_template": true,
+    "template_format": "jinja",
+    "is_hidden": false
+  }

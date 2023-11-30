@@ -5,5 +5,10 @@
   "example": "Example Template",
   "visualization": "Visualization",
   "vitessce": "Vitessce Visualization",
-  "altair": "Altair Viualization"
+  "altair": "Altair Viualization",
+  "anndata": "Using anndata format",
+  "salmon": "Spatial data analysed with Salmon",
+  "codex": "CODEX data",
+  "slide-seq": "Slide-seq data",
+  "files": "Work with HuBMAP data files"
 }

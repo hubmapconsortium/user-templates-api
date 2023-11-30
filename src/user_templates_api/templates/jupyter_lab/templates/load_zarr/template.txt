@@ -1,0 +1,433 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Retrieve anndata from remote zarr storage\n",
+    "\n",
+    "This template shows how to work with the remote zarr stores for anndata in the HuBMAP Data Portal.\n",
+    "\n",
+    "[Zarr](https://zarr.dev) is a way of storing large N-dimensional arrays, and is a great way to store anndata and load it quicker than with h5ad. The [Zarr-Python docs](https://zarr.readthedocs.io/en/stable/) describe how to work with zarr in Python. Many of the anndata is both stored in h5ad and in zarr format in the portal. However, one main caveat of this remote zarr storage, is that the common function [zarr.hierarchy](https://zarr.readthedocs.io/en/stable/api/hierarchy.html) cannot be run (as well as [zarr.tree](https://zarr.readthedocs.io/en/stable/api/convenience.html#zarr.convenience.tree)). As the newer function [zarr.consolidate_metadata](https://zarr.readthedocs.io/en/stable/api/convenience.html#zarr.convenience.consolidate_metadata) which resolves this issue has not been run on many of the Portal resources, this notebook shows how to work with the zarr storage when the hierarchy cannot be retrieved.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!pip install --upgrade pip\n",
+    "!pip install pandas requests anndata zarr aiohttp fsspec ipython"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from csv import DictReader, excel_tab\n",
+    "from io import StringIO\n",
+    "import json\n",
+    "import requests\n",
+    "import warnings\n",
+    "\n",
+    "import anndata as ad\n",
+    "import pandas as pd\n",
+    "import zarr"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Linked datasets"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "uuids = {{ uuids | safe }}\n",
+    "\n",
+    "search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## See information about remote zarr storage\n",
+    "Anndata consist of various data arrays, such as _X_ and _obs_ ([documentation](https://anndata.readthedocs.io/en/latest/generated/anndata.AnnData.html)). When we open the root storage, we can see which of the main classes are present as follows."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def see_remote_zarr_variables(zarr_url, verbose=True):\n",
+    "    '''\n",
+    "    Checking which classes are present at a remote zarr storage.\n",
+    "\n",
+    "    Options: X, obs, var, uns, obsm, varm, layers, raw, obsp, varp\n",
+    "\n",
+    "    Documentation: \n",
+    "    - https://anndata.readthedocs.io/en/latest/generated/anndata.AnnData.html\n",
+    "    - https://github.com/scverse/anndata/blob/main/docs/fileformat-prose.md\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    zarr_url : str\n",
+    "        url with location of base zarr group\n",
+    "    verbose : Boolean, optional\n",
+    "        If set to True, will print messages. Default: True.\n",
+    "    '''\n",
+    "    root = zarr.open(zarr_url)\n",
+    "\n",
+    "    groups = ['X', 'obs', 'var', 'uns', 'obsm', 'varm', 'layers', 'raw', 'obsp', 'varp']\n",
+    "\n",
+    "    existing_groupings = {}\n",
+    "    for group in groups:\n",
+    "        try:\n",
+    "            at = root[group].attrs\n",
+    "            if verbose: \n",
+    "                print(f'The variable {group} exists. Child groupings are: {dict(at)}')\n",
+    "            existing_groupings[group] = dict(at)\n",
+    "        except:\n",
+    "            if verbose: \n",
+    "                print(f'The variable {group} does not exist.')\n",
+    "\n",
+    "    return(existing_groupings)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "zarr_url = f'https://assets.hubmapconsortium.org/{uuids[0]}/hubmap_ui/anndata-zarr/scvelo_annotated.zarr'\n",
+    "see_remote_zarr_variables(zarr_url, verbose=False)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There is information that can't be retrieved like this. An example is a categorical mapping or anything stored in uns. Luckily, because to store a zarr Group, we will have a .zgroup file, we can query the search API and retrieve some more information!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_zarr_paths(uuids, search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'):\n",
+    "    '''\n",
+    "    Get dictionary of zarr extensions for datasets.\n",
+    "    For each dataset, it has a new dictionary, with the base zarr storages as keys, and\n",
+    "    extensions as a list for it's value. \n",
+    "    The base zarr storages can also be interpreted as the different anndata files.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    uuids : list of str\n",
+    "        list with dataset UUIDs\n",
+    "    search_api : str, optional\n",
+    "        URL of HuBMAP Search API. Default: 'https://search.api.hubmapconsortium.org/v3/portal/search'\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    dictionary with for each UUID a new dictionary with base zarr stores and extensions\n",
+    "    '''\n",
+    "    hits = json.loads(\n",
+    "            requests.post(\n",
+    "                search_api,\n",
+    "                json={\n",
+    "                    'size': 10000,\n",
+    "                    'query': {'ids': {'values': uuids}},\n",
+    "                    '_source': ['files']\n",
+    "                }, \n",
+    "            ).text\n",
+    "        )['hits']['hits']\n",
+    "\n",
+    "    uuid_to_files = {}\n",
+    "    for hit in hits:\n",
+    "        # get all the file_paths for a dataset\n",
+    "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
+    "\n",
+    "        # filter file_paths for zarr\n",
+    "        file_paths_zarr = [file_name for file_name in file_paths if 'zarr' in file_name]\n",
+    "        \n",
+    "        # get the roots of the zarr groups\n",
+    "        root_files = [file_name.replace('.zarr/.zgroup', '') for file_name in file_paths_zarr if '.zarr/.zgroup' in file_name]\n",
+    "\n",
+    "        # create a dictionary from root to extension\n",
+    "        root_files_to_files = {root_file : [file.replace(root_file + '.zarr/', '') for file in file_paths_zarr if root_file in file] for root_file in root_files}\n",
+    "        \n",
+    "        uuid_to_files[hit['_id']] = root_files_to_files\n",
+    "    \n",
+    "    return uuid_to_files"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can use this information to now set up a way to retrieve anndata from the zarr storage."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "get_zarr_paths(uuids)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Retrieve individual parts "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# get dictionary and print zarr root files\n",
+    "zarr_dict = get_zarr_paths(uuids)[uuids[0]]\n",
+    "\n",
+    "zarr_root_files = list(zarr_dict.keys())\n",
+    "print(f'Files with zarr storage for this dataset: {zarr_root_files}')\n",
+    "\n",
+    "# select the first zarr root file\n",
+    "selected_file = zarr_root_files[0]\n",
+    "print(f'Selected file: {selected_file}')\n",
+    "\n",
+    "# get the relative groupings for this\n",
+    "relative_files = zarr_dict[selected_file]\n",
+    "print(f'Groupings for this zarr storage: {relative_files}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# get the zarr_url for this dataset and file\n",
+    "zarr_url = f'https://assets.hubmapconsortium.org/{uuids[0]}/{selected_file}.zarr'\n",
+    "\n",
+    "# get the X array\n",
+    "X_arr = zarr.open(zarr_url + \"/X\")\n",
+    "\n",
+    "# load as pandas DataFrame\n",
+    "X_df = pd.DataFrame(X_arr)\n",
+    "X_df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can use the .attrs as before to get the column names for the obs and var dataframes."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_dfs_obs_var(zarr_url, attr_name, mapping=None):\n",
+    "    '''\n",
+    "    Get dataframe of obs of var dataframe of anndata.\n",
+    "    Can also retrieve mappings of columns.\n",
+    "   \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    zarr_url : str\n",
+    "        url with location of base zarr group\n",
+    "    attr_name : str\n",
+    "        either 'obs' or 'var'\n",
+    "    mapping : str, optional\n",
+    "        relative location of mapping zarr group. Default: None\n",
+    "\n",
+    "    Returns\n",
+    "    -------\n",
+    "    Pandas DataFrame with obs or var.\n",
+    "    '''\n",
+    "    if attr_name not in ['obs', 'var']: \n",
+    "        return\n",
+    "    \n",
+    "    attr_root = zarr.open(f'{zarr_url}/{attr_name}')\n",
+    "\n",
+    "    attr_index = attr_root[attr_root.attrs['_index']]\n",
+    "    attr_columns = attr_root.attrs['column-order']\n",
+    "\n",
+    "    attr_df = pd.DataFrame(index=attr_index, columns=attr_columns)\n",
+    "\n",
+    "    for col in attr_columns:\n",
+    "        col_arr = zarr.open(f'{zarr_url}/{attr_name}/{col}')\n",
+    "        attr_df[col] = col_arr\n",
+    "\n",
+    "    if mapping: \n",
+    "        try: \n",
+    "            mapping_group = attr_root[mapping]\n",
+    "            for col in attr_columns:\n",
+    "                try:\n",
+    "                    categories = mapping_group[col][()]\n",
+    "                    mapping_categories = dict(zip(list(range(len(categories))), categories))\n",
+    "                    attr_df[col] = attr_df[col].map(mapping_categories)\n",
+    "                except:\n",
+    "                    pass\n",
+    "        except: \n",
+    "            warnings.warn(f'Mapping {mapping} is not valid.')\n",
+    "\n",
+    "    return attr_df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_obs = get_dfs_obs_var(zarr_url, 'obs')\n",
+    "df_obs.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Sometimes there are mappings also stored in the zarr storage, that convert a categorical column with a mapping into the true values. These can be stored under another group in the zarr storage. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_obs = get_dfs_obs_var(zarr_url, 'obs', mapping='__categories')\n",
+    "df_obs.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "However, for _uns_ and _layers_ and other classes, one needs to know the structure to retrieve the values.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Retrieve X, obs and var"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can combine our retrieval in one function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def load_remote_anndata_zarr(zarr_url, obs_mapping=None, var_mapping=None):\n",
+    "    '''\n",
+    "    Given a zarr_url, retrieve the X, obs and var and return these a new anndata obbject.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    zarr_url : str\n",
+    "        url with location of base zarr group\n",
+    "    obs_mapping : str\n",
+    "        relative location of zarr group for mapping for obs. Default: None\n",
+    "    var_mapping : str\n",
+    "        relative location of zarr group for mapping for var. Default: None\n",
+    "        \n",
+    "    Returns\n",
+    "    -------\n",
+    "    anndata object with X, obs and var\n",
+    "    '''\n",
+    "    X_arr = zarr.open(zarr_url + \"/X\")\n",
+    "    obs_df = get_dfs_obs_var(zarr_url, 'obs', mapping=obs_mapping)\n",
+    "    var_df = get_dfs_obs_var(zarr_url, 'var', mapping=var_mapping)\n",
+    "    adata = ad.AnnData(X=X_arr, obs=obs_df, var=var_df)\n",
+    "    return adata\n",
+    "\n",
+    "def load_remote_anndata_zarr_from_uuid(uuid, file_name, obs_mapping=None, var_mapping=None):\n",
+    "    '''\n",
+    "    Given a uuid and file name, retrieve the X, obs and var and return these a new anndata obbject.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    uuid : str\n",
+    "        uuid of HuBMAP dataset\n",
+    "    file_name : str\n",
+    "        relative location of file from which data is to be retrieved\n",
+    "    obs_mapping : str\n",
+    "        relative location of zarr group for mapping for obs. Default: None\n",
+    "    var_mapping : str\n",
+    "        relative location of zarr group for mapping for var. Default: None\n",
+    "        \n",
+    "    Returns\n",
+    "    -------\n",
+    "    anndata object with X, obs and var\n",
+    "    '''\n",
+    "    zarr_url = f'https://assets.hubmapconsortium.org/{uuid}/{file_name}'\n",
+    "    return load_remote_anndata_zarr(zarr_url, obs_mapping=obs_mapping, var_mapping=var_mapping)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata = load_remote_anndata_zarr_from_uuid(uuids[0], 'hubmap_ui/anndata-zarr/secondary_analysis.zarr', obs_mapping='__categories')\n",
+    "adata"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": ".venv",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

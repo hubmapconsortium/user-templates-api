@@ -4,5 +4,6 @@
     "tags": [
     ], 
     "is_multi_dataset_template": true,
-    "template_format": "json"
+    "template_format": "jinja",
+    "is_hidden": false
   }

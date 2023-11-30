@@ -26,8 +26,8 @@ For the jinja format, the render.py as in this folder is sufficient.
 
 
 ## template.txt
-The actual template. This can be directly converted from .ipynb to .txt. If insertion of values is required, e.g. uuids, add any of the \_get_\[...]_cells in [utils.py](https://github.com/hubmapconsortium/user-templates-api/blob/development/src/user_templates_api/templates/jupyter_lab/utils/utils.py) as follows: 
+The actual template. This can be directly converted from .ipynb to .txt. If insertion of values is required, e.g. uuids, you can add them as follows: 
 ```sh
-{% jupyter_get_uuid_cells %}
+uuids = {{ uuids | safe }}
 ```
-An example can be found in the compress_anndata template.
+An example can be found in the blank template.

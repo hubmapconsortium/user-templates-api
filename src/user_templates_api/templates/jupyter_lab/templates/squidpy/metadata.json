@@ -1,0 +1,12 @@
+{
+    "title": "Analyse neighborhoods of slide-seq spatial data with squidpy",
+    "description": "Use squidpy to analyse and visualize neighborhoods of clusters of slide-seq data.",
+    "tags": [
+        "slide-seq",
+        "visualize",
+        "anndata"
+    ], 
+    "is_multi_dataset_template": true,
+    "template_format": "jinja",
+    "is_hidden": false
+  }

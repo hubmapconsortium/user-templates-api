@@ -28,7 +28,15 @@
     "import anndata as ad"
    ]
   },
-  {% jupyter_get_uuid_cells %},
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "uuids = {{ uuids | safe }}"
+   ]
+  },
   {
    "cell_type": "code",
    "execution_count": null,

@@ -111,8 +111,9 @@ class TemplateView(View):
                             / "metadata.json"
                         )
                     ),
-                    "body": json.loads(request.body),
                 }
+
+                data |= json.loads(request.body)
 
                 template_class_obj_inst = None
                 for template_class_name, template_class_obj in inspect.getmembers(
@@ -172,8 +173,9 @@ class TestTemplateView(View):
             data = {
                 "group_token": group_token,
                 "metadata": {"template_format": template_format},
-                "body": json.loads(request.body),
             }
+
+            data |= json.loads(request.body)
 
             template_class_obj_inst = None
             for template_class_name, template_class_obj in inspect.getmembers(
