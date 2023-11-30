@@ -3,6 +3,7 @@ from nbformat.v4 import new_code_cell, new_markdown_cell
 
 from user_templates_api.templates.jupyter_lab.render import JupyterLabRender
 from user_templates_api.utils.client import get_client
+from portal_visualization.builders.base_builders import ConfCells
 
 
 class JupyterLabVisualizationRender(JupyterLabRender):
@@ -20,12 +21,15 @@ class JupyterLabVisualizationRender(JupyterLabRender):
             or vitessce_conf.conf is None
             or vitessce_conf.cells is None
         ):
-            vitessce_conf.cells = [
-                new_markdown_cell(
-                    "## Error in visualization\n"
-                    f"Vitessce visualization could not be displayed for dataset {uuid}."
-                )
-            ]
+            vitessce_conf = ConfCells(
+                vitessce_conf.conf,
+                [
+                    new_markdown_cell(
+                        "## Error in visualization\n"
+                        f"Vitessce visualization could not be displayed for dataset {uuid}."
+                    )
+                ],
+            )
 
         cells = [
             new_markdown_cell(
