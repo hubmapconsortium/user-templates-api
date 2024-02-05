@@ -127,9 +127,11 @@ class ApiClient:
         query = {
             "query":
             # ES guarantees that _id is unique, so this is best:
-            {"ids": {"values": uuid if isinstance(uuid, list) else [uuid]}}
-            if uuid
-            else {"match": {"hubmap_id.keyword": hbm_id}}
+            (
+                {"ids": {"values": uuid if isinstance(uuid, list) else [uuid]}}
+                if uuid
+                else {"match": {"hubmap_id.keyword": hbm_id}}
+            )
             # With default mapping, without ".keyword", it splits into tokens,
             # and we get multiple substring matches, instead of unique match.
         }

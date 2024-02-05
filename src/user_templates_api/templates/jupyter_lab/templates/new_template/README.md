@@ -6,6 +6,7 @@ Each template has it's own folder in [src/user_templates_api/templates/jupyter_l
 - metadata.json
 - render.py
 - template.txt 
+
 Use short, descriptive words for the folder name.
 
 ## README.md
@@ -16,9 +17,10 @@ The README contains further information about the template. At least include 1 d
 The metadata.json is used to display the templates in the HuBMAP Data Portal. It consists of: 
 - title: a title of the notebook.
 - description: a 1-2 sentence description of the notebook.
-- tags: a list of tags to describe the notebook. Potential tags can be found [here](https://github.com/hubmapconsortium/user-templates-api/tree/development/src/tags.json). New tags can be added if necessary. In future releases, any template with the 'test' tag is not shown in the portal.
+- tags: a list of tags to describe the notebook. Potential tags can be found [here](https://github.com/hubmapconsortium/user-templates-api/tree/development/src/tags.json). New tags can be added if necessary. 
 - is_multi_dataset_template: boolean describing whether template can handle more than 1 dataset
 - template_format: one of python/json/jinja. We recommend using jinja, and describe the insertion of cells for jinja below.
+- is_hidden: Any template with this field set to `true` is not shown in the Portal.
 
 
 ## render.py
