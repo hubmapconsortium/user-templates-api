@@ -3,7 +3,7 @@
     "description": "Use squidpy to analyse and visualize neighborhoods of clusters of slide-seq data.",
     "tags": [
         "slide-seq",
-        "visualize",
+        "visualization",
         "anndata"
     ], 
     "is_multi_dataset_template": true,
