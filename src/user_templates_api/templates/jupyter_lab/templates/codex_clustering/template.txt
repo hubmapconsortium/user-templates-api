@@ -14,7 +14,7 @@
    "outputs": [],
    "source": [
     "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce starlette anywidget uvicorn widgetsnbextension"
+    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce starlette uvicorn widgetsnbextension"
    ]
   },
   {
