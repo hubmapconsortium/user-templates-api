@@ -166,10 +166,11 @@ class ApiClient:
         return files_from_response(response_json)
 
     def get_vitessce_conf_cells_and_lifted_uuid(
-            self, entity, marker=None, wrap_error=True, parent=None):
-        '''
+        self, entity, marker=None, wrap_error=True, parent=None
+    ):
+        """
         Returns a dataclass with vitessce_conf and is_lifted.
-        '''
+        """
         vis_lifted_uuid = None  # default
         image_pyramid_descendants = self.get_descendant_to_lift(entity["uuid"])
 
@@ -180,15 +181,14 @@ class ApiClient:
             # about "files". Bill confirms that when the new structure comes in
             # there will be a period of backward compatibility to allow us to migrate.
 
-            metadata = derived_entity.get('metadata', {})
+            metadata = derived_entity.get("metadata", {})
 
-            if metadata.get('files'):
-                derived_entity['files'] = metadata.get('files', [])
+            if metadata.get("files"):
+                derived_entity["files"] = metadata.get("files", [])
                 vitessce_conf = self.get_vitessce_conf_cells_and_lifted_uuid(
-                    derived_entity,
-                    marker=marker,
-                    wrap_error=wrap_error, parent=entity).vitessce_conf
-                vis_lifted_uuid = derived_entity['uuid']
+                    derived_entity, marker=marker, wrap_error=wrap_error, parent=entity
+                ).vitessce_conf
+                vis_lifted_uuid = derived_entity["uuid"]
             else:  # no files
                 error = f'Related image entity {derived_entity["uuid"]} \
                     is missing file information (no "files" key found in its metadata).'
@@ -197,14 +197,16 @@ class ApiClient:
                 #         {entity["uuid"]}: {error}')
                 vitessce_conf = _create_vitessce_error(error)
 
-        elif not entity.get('files'):
+        elif not entity.get("files"):
             vitessce_conf = ConfCells(None, None)
 
         # Otherwise, just try to visualize the data for the entity itself:
         else:
             try:
                 Builder = get_view_config_builder(entity, self._get_assaytype(), parent)
-                builder = Builder(entity, self.groups_token, settings.CONFIG["ASSETS_ENDPOINT"])
+                builder = Builder(
+                    entity, self.groups_token, settings.CONFIG["ASSETS_ENDPOINT"]
+                )
                 vitessce_conf = builder.get_conf_cells(marker=marker)
             except Exception as e:
                 if not wrap_error:
@@ -212,64 +214,47 @@ class ApiClient:
                 vitessce_conf = _create_vitessce_error(str(e))
 
         return VitessceConfLiftedUUID(
-            vitessce_conf=vitessce_conf,
-            vis_lifted_uuid=vis_lifted_uuid)
+            vitessce_conf=vitessce_conf, vis_lifted_uuid=vis_lifted_uuid
+        )
 
     # Helper to create a function that fetches assaytype from the API with current headers
     def _get_assaytype(self):
         def get_assaytype(entity):
-            uuid = entity.get('uuid')
+            uuid = entity.get("uuid")
             endpoint = settings.CONFIG["SOFT_ASSAY_ENDPOINT"]
             path = settings.CONFIG["SOFT_ASSAY_ENDPOINT_PATH"]
 
             url = f"{endpoint}/{path}/{uuid}"
             response = requests.get(url)
             return response.json()
+
         return get_assaytype
 
     def get_descendant_to_lift(self, uuid, is_publication=False):
-        '''
+        """
         Given the data type of the descendant and a uuid,
         returns the doc of the most recent descendant
         that is in QA or Published status.
-        '''
+        """
         hints = "is_support" if is_publication else "is_image"
         query = {
             "query": {
                 "bool": {
                     "must": [
-                        {
-                            "term": {
-                                "vitessce-hints": hints
-                            }
-                        },
-                        {
-                            "term": {
-                                "ancestor_ids": uuid
-                            }
-                        },
-                        {
-                            "terms": {
-                                "mapped_status.keyword": [
-                                    "QA",
-                                    "Published"
-                                ]
-                            }
-                        }
+                        {"term": {"vitessce-hints": hints}},
+                        {"term": {"ancestor_ids": uuid}},
+                        {"terms": {"mapped_status.keyword": ["QA", "Published"]}},
                     ]
                 }
             },
-            "sort": [
-                {
-                    "last_modified_timestamp": {
-                        "order": "desc"
-                    }
-                }
-            ],
-            "size": 1
+            "sort": [{"last_modified_timestamp": {"order": "desc"}}],
+            "size": 1,
         }
-        response_json = self._request(settings.CONFIG['ELASTICSEARCH_ENDPOINT']
-                                      + settings.CONFIG['PORTAL_INDEX_PATH'], body_json=query)
+        response_json = self._request(
+            settings.CONFIG["ELASTICSEARCH_ENDPOINT"]
+            + settings.CONFIG["PORTAL_INDEX_PATH"],
+            body_json=query,
+        )
 
         try:
             hits = _get_hits(response_json)
@@ -512,17 +497,25 @@ def _get_latest_uuid(revisions):
 
 
 def _create_vitessce_error(error):
-    return ConfCells({
-        'name': 'Error',
-        'version': '1.0.4',
-        'datasets': [],
-        'initStrategy': 'none',
-        'layout': [
-            {
-                'component': 'description',
-                "props": {
-                    "description": 'Error while generating the Vitessce configuration: ' + error,
-                },
-                'x': 0, 'y': 0, 'w': 12, 'h': 1
-            }],
-    }, None)
+    return ConfCells(
+        {
+            "name": "Error",
+            "version": "1.0.4",
+            "datasets": [],
+            "initStrategy": "none",
+            "layout": [
+                {
+                    "component": "description",
+                    "props": {
+                        "description": "Error while generating the Vitessce configuration: "
+                        + error,
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 12,
+                    "h": 1,
+                }
+            ],
+        },
+        None,
+    )
