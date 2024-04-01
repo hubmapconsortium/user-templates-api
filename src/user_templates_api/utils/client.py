@@ -226,7 +226,7 @@ class ApiClient:
             response = requests.get(url)
             return response.json()
         return get_assaytype
-    
+
     def get_descendant_to_lift(self, uuid, is_publication=False):
         '''
         Given the data type of the descendant and a uuid,
@@ -277,7 +277,6 @@ class ApiClient:
         except IndexError:
             source = None
         return source
-
 
 
 def _make_query(constraints, uuids):
