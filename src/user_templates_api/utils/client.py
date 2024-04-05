@@ -2,6 +2,7 @@ from collections import namedtuple
 from copy import deepcopy
 from dataclasses import dataclass
 
+import json
 import requests
 from django.conf import settings
 from flask import abort
@@ -34,43 +35,54 @@ def get_client(group_token):
     return ApiClient(settings.CONFIG["ENTITY_API_BASE"], group_token)
 
 
+def _handle_request(url, headers=None, body_json=None):
+    try:
+        response = (
+            requests.post(url, headers=headers, json=body_json)
+            if body_json
+            else requests.get(url, headers=headers)
+        )
+    except requests.exceptions.ConnectTimeout as error:
+        # current_app.logger.error(error)
+        abort(504)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        # current_app.logger.error(error.response.text)
+        status = error.response.status_code
+        if status in [400, 404]:
+            # The same 404 page will be returned,
+            # whether it's a missing route in portal-ui,
+            # or a missing entity in the API.
+            abort(status)
+        if status in [401]:
+            # I believe we have 401 errors when the globus credentials
+            # have expired, but are still in the flask session.
+            abort(status)
+        raise
+    return response
+
+
 class ApiClient:
     def __init__(self, url_base=None, groups_token=None):
         self.url_base = url_base
         self.groups_token = groups_token
 
+    def _get_headers(self):
+        headers = {'Authorization': 'Bearer ' + self.groups_token} if self.groups_token else {}
+        return headers
+
     def _request(self, url, body_json=None):
-        headers = (
-            {"Authorization": "Bearer " + self.groups_token}
-            if self.groups_token
-            else {}
-        )
-        try:
-            response = (
-                requests.post(url, headers=headers, json=body_json)
-                if body_json
-                else requests.get(url, headers=headers)
-            )
-        except requests.exceptions.ConnectTimeout:
-            # except requests.exceptions.ConnectTimeout as error:
-            #     # TODO: logging
-            # current_app.logger.error(error)
-            abort(504)
-        try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as error:
-            # current_app.logger.error(error.response.text)
-            status = error.response.status_code
-            if status in [400, 404]:
-                # The same 404 page will be returned,
-                # whether it's a missing route in portal-ui,
-                # or a missing entity in the API.
-                abort(status)
-            if status in [401]:
-                # I believe we have 401 errors when the globus credentials
-                # have expired, but are still in the flask session.
-                abort(status)
-            raise
+        '''
+        Makes request to HuBMAP APIs behind API Gateway (Search, Entity, UUID).
+        '''
+        headers = self._get_headers()
+        response = _handle_request(url, headers, body_json)
+        status = response.status_code
+        # HuBMAP APIs will redirect to s3 if the response payload over 10 MB.
+        if status in [303]:
+            s3_resp = _handle_request(response.content).content
+            return json.loads(s3_resp)
         return response.json()
 
     def get_all_dataset_uuids(self):
@@ -171,7 +183,9 @@ class ApiClient:
         """
         Returns a dataclass with vitessce_conf and is_lifted.
         """
+
         vis_lifted_uuid = None  # default
+
         image_pyramid_descendants = self.get_descendant_to_lift(entity["uuid"])
 
         # First, try "vis-lifting": Display image pyramids on their parent entity pages.
@@ -258,6 +272,7 @@ class ApiClient:
 
         try:
             hits = _get_hits(response_json)
+            print('hits', len(hits))
             source = hits[0]["_source"]
         except IndexError:
             source = None
@@ -433,52 +448,6 @@ def _get_entity_from_hits(hits, has_token=None, uuid=None, hbm_id=None):
         raise Exception(f"ID not unique; got {len(hits)} matches")
     entity = hits[0]["_source"]
     return entity
-
-
-def _get_image_pyramid_descendants(entity):
-    """
-    >>> _get_image_pyramid_descendants({
-    ...     'descendants': []
-    ... })
-    []
-    >>> _get_image_pyramid_descendants({
-    ...     'descendants': [{'no_data_types': 'should not error!'}]
-    ... })
-    []
-    >>> _get_image_pyramid_descendants({
-    ...     'descendants': [{'data_types': ['not_a_pyramid']}]
-    ... })
-    []
-    >>> doc = {'data_types': ['image_pyramid']}
-    >>> descendants = _get_image_pyramid_descendants({
-    ...     'descendants': [doc]
-    ... })
-    >>> descendants
-    [{'data_types': ['image_pyramid']}]
-    >>> assert doc == descendants[0]
-    >>> assert id(doc) != id(descendants[0])
-    >>> _get_image_pyramid_descendants({
-    ...     'descendants': [
-    ...         {'data_types': ['not_a_pyramid']},
-    ...         {'data_types': ['image_pyramid']}
-    ...     ]
-    ... })
-    [{'data_types': ['image_pyramid']}]
-    There shouldn't be multiple image pyramids, but if there are, we should capture all of them:
-    >>> _get_image_pyramid_descendants({
-    ...     'descendants': [
-    ...         {'id': 'A', 'data_types': ['image_pyramid']},
-    ...         {'id': 'B', 'data_types': ['not_a_pyramid']},
-    ...         {'id': 'C', 'data_types': ['image_pyramid']}
-    ...     ]
-    ... })
-    [{'id': 'A', 'data_types': ['image_pyramid']}, {'id': 'C', 'data_types': ['image_pyramid']}]
-    """
-    descendants = entity.get("descendants", [])
-    image_pyramid_descendants = [
-        d for d in descendants if "image_pyramid" in d.get("data_types", [])
-    ]
-    return deepcopy(image_pyramid_descendants)
 
 
 def _get_latest_uuid(revisions):
