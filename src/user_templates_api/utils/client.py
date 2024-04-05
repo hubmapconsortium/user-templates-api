@@ -1,7 +1,7 @@
+import json
 from collections import namedtuple
 from dataclasses import dataclass
 
-import json
 import requests
 from django.conf import settings
 from flask import abort
