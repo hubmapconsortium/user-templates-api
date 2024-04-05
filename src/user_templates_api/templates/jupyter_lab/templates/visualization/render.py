@@ -4,6 +4,7 @@ from nbformat.v4 import new_code_cell, new_markdown_cell
 from user_templates_api.templates.jupyter_lab.render import JupyterLabRender
 from user_templates_api.utils.client import get_client
 
+
 class JupyterLabVisualizationRender(JupyterLabRender):
     def python_generate_template_data(self, data):
         uuids = data["uuids"]

@@ -1,5 +1,4 @@
 from collections import namedtuple
-from copy import deepcopy
 from dataclasses import dataclass
 
 import json
@@ -42,7 +41,7 @@ def _handle_request(url, headers=None, body_json=None):
             if body_json
             else requests.get(url, headers=headers)
         )
-    except requests.exceptions.ConnectTimeout as error:
+    except requests.exceptions.ConnectTimeout:
         # current_app.logger.error(error)
         abort(504)
     try:
@@ -69,13 +68,17 @@ class ApiClient:
         self.groups_token = groups_token
 
     def _get_headers(self):
-        headers = {'Authorization': 'Bearer ' + self.groups_token} if self.groups_token else {}
+        headers = (
+            {"Authorization": "Bearer " + self.groups_token}
+            if self.groups_token
+            else {}
+        )
         return headers
 
     def _request(self, url, body_json=None):
-        '''
+        """
         Makes request to HuBMAP APIs behind API Gateway (Search, Entity, UUID).
-        '''
+        """
         headers = self._get_headers()
         response = _handle_request(url, headers, body_json)
         status = response.status_code
@@ -272,7 +275,7 @@ class ApiClient:
 
         try:
             hits = _get_hits(response_json)
-            print('hits', len(hits))
+            print("hits", len(hits))
             source = hits[0]["_source"]
         except IndexError:
             source = None
