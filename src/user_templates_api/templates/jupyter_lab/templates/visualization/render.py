@@ -1,9 +1,8 @@
-import vitessce
+from importlib_metadata import version
 from nbformat.v4 import new_code_cell, new_markdown_cell
 
 from user_templates_api.templates.jupyter_lab.render import JupyterLabRender
 from user_templates_api.utils.client import get_client
-
 
 class JupyterLabVisualizationRender(JupyterLabRender):
     def python_generate_template_data(self, data):
@@ -32,7 +31,7 @@ class JupyterLabVisualizationRender(JupyterLabRender):
             new_code_cell(
                 "!pip uninstall community flask albumentations -y "
                 "# Preinstalled on Colab; Causes version conflicts.\n"
-                f"!pip install vitessce[all]=={vitessce.__version__}"
+                f"!pip install vitessce[all]=={version('vitessce')}"
             ),
             new_markdown_cell(
                 "## Linked datasets\n"
