@@ -3,7 +3,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Cluster SPRM output of CODEX data and visualize with Vitessce\n",
+    "# Cluster SPRM output of CODEX data and visualize with Vitessce\n",
     "This template shows how to cluster CODEX data and load a new clustering into Vitessce. This template requires prior cell segmentation, and takes in the locations of cell (centers) and protein expression per cell. \n"
    ]
   },
@@ -14,7 +14,7 @@
    "outputs": [],
    "source": [
     "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce starlette uvicorn widgetsnbextension"
+    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce starlette uvicorn widgetsnbextension\n"
    ]
   },
   {
@@ -29,15 +29,17 @@
     "import requests\n",
     "import warnings\n",
     "\n",
+    "import numpy as np\n",
     "import pandas as pd\n",
     "import matplotlib.pyplot as plt\n",
+    "import anndata as ad\n",
     "\n",
     "from sklearn.cluster import KMeans\n",
     "from sklearn.decomposition import PCA\n",
     "from sklearn.pipeline import Pipeline\n",
     "from sklearn.preprocessing import MinMaxScaler, StandardScaler\n",
     "\n",
-    "from vitessce import VitessceChainableConfig, VitessceConfigDatasetFile"
+    "from vitessce import VitessceChainableConfig, AnnDataWrapper"
    ]
   },
   {
@@ -602,7 +604,10 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "We can load our data into vitessce for an interactive view."
+    "# Vitessce view\n",
+    "We can load our data into vitessce for an interactive view.\n",
+    "\n",
+    "In the HuBMAP workspaces environment, to load local files, we will first create an AnnDataWrapper for this."
    ]
   },
   {
@@ -611,38 +616,60 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "root_folder = '.'\n",
+    "# Creating the anndata object and writing it to a local zarr store\n",
+    "\n",
     "uuid = uuids[0]\n",
     "\n",
+    "with open(root_folder + '/output/' + uuid + '/kmeans_output/cell_channel_total.csv') as df_expression:\n",
+    "    adata = ad.read_csv(df_expression)\n",
+    "\n",
+    "df_expression = pd.read_csv(root_folder + '/output/' + uuid + '/kmeans_output/cell_channel_total.csv')\n",
+    "df_location = pd.read_csv(root_folder + '/output/' + uuid + '/kmeans_output/cell_centers.csv')\n",
+    "df_clusters = pd.read_csv(root_folder + '/output/' + uuid + '/kmeans_output/cell_cluster.csv')\n",
+    "\n",
+    "# df_expression\n",
+    "df_expression.drop('ID', axis=1, inplace=True)\n",
+    "df_location.drop('ID', axis=1, inplace=True)\n",
+    "df_clusters.drop('ID', axis=1, inplace=True)\n",
+    "\n",
+    "adata = ad.AnnData(X=df_expression,obs=df_clusters,var=pd.DataFrame(columns=df_expression.columns).T)\n",
+    "adata.obsm['location'] = np.array(df_location[['x', 'y']])\n",
+    "\n",
+    "adata.write_zarr(root_folder + '/output/' + uuid + '/anndata.zarr')\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# creating an AnnDataWrapper\n",
+    "\n",
+    "w = AnnDataWrapper(\n",
+    "    adata_store=root_folder + '/output/' + uuid + '/anndata.zarr',\n",
+    "    obs_feature_matrix_path=\"X\",\n",
+    "    obs_locations_path=\"obsm/location\",\n",
+    "    obs_set_paths=[\"obs/cluster\"],\n",
+    "    obs_set_names=['K-means Z-scaling k=10'],\n",
+    "    coordination_values={\"featureType\": \"antigen\"}\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Creating the Vitessce config\n",
+    "\n",
     "conf = VitessceChainableConfig(\n",
-    "    name=\"Clustering CODEX data\", description=\"\", schema_version=\"1.0.7\"\n",
+    "    name=\"Clustering CODEX data\", description=\"\", schema_version=\"1.0.16\"\n",
     ").add_dataset(\n",
     "    name='Protein dataset', \n",
     "    uid='A',\n",
-    "    files = [ VitessceConfigDatasetFile(\n",
-    "                file_type=\"obsFeatureMatrix.csv\",\n",
-    "                url=root_folder + '/output/' + uuid + '/kmeans_output/cell_channel_total.csv',\n",
-    "                ),\n",
-    "              VitessceConfigDatasetFile(\n",
-    "                file_type=\"obsLocations.csv\",\n",
-    "                url=root_folder + '/output/' + uuid + '/kmeans_output/cell_center.csv',\n",
-    "                options={\n",
-    "                    \"obsIndex\": \"ID\",\n",
-    "                    \"obsLocations\": [\"x\", \"y\"]\n",
-    "                    }\n",
-    "                ),\n",
-    "                VitessceConfigDatasetFile(\n",
-    "                file_type='obsSets.csv', \n",
-    "                url=root_folder + '/output/' + uuid + '/kmeans_output/cell_cluster.csv',\n",
-    "                options = {\n",
-    "                    'obsIndex': 'ID',\n",
-    "                    'obsSets': [\n",
-    "                        {'name': 'K-means Z-scaling k=10',\n",
-    "                        'column': 'cluster'\n",
-    "                            }\n",
-    "                    ]\n",
-    "                }\n",
-    "            )]\n",
+    "    objs = [w]\n",
     ").set_coordination_value(\n",
     "    c_type=\"spatialSegmentationLayer\",\n",
     "    c_scope=\"A\",\n",
@@ -652,19 +679,24 @@
     "      \"visible\": True,\n",
     "      \"stroked\": False\n",
     "    }\n",
+    ").set_coordination_value(\n",
+    "    c_type=\"featureType\",\n",
+    "    c_scope=\"A\",\n",
+    "    c_value=\"antigen\"\n",
     ").add_view(\n",
     "     dataset_uid=\"A\", component=\"spatial\", x=0, y=0, w=4, h=8,\n",
-    "     coordination_scopes={\"spatialSegmentationLayer\": \"A\"}\n",
+    "     coordination_scopes={\"spatialSegmentationLayer\": \"A\", \"featureType\": \"A\" }\n",
     ").add_view(\n",
     "    dataset_uid=\"A\", component=\"obsSetSizes\", x=4, y=0, w=4, h=8\n",
     ").add_view(\n",
-    "    dataset_uid=\"A\", component=\"cellSets\", x=8, y=0, w=2, h=8\n",
+    "    dataset_uid=\"A\", component=\"obsSets\", x=8, y=0, w=2, h=8\n",
     ").add_view(\n",
     "    dataset_uid=\"A\", component=\"heatmap\", x=0, y=8, w=6, h=6,\n",
-    "    props={\"variablesLabelOverride\": \"antigen\", \"transpose\": True},\n",
+    "    coordination_scopes={ \"featureType\": \"A\" },\n",
+    "    props={\"transpose\": True},\n",
     ").add_view(\n",
-    "    dataset_uid=\"A\", component=\"genes\", x=6, y=8, w=4, h=6,\n",
-    "    props={\"variablesLabelOverride\": \"antigen\"},\n",
+    "    dataset_uid=\"A\", component=\"featureList\", x=6, y=8, w=4, h=6,\n",
+    "    coordination_scopes={ \"featureType\": \"A\" },\n",
     ")\n",
     "\n",
     "conf.widget()"
