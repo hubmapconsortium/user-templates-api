@@ -117,7 +117,7 @@
     "    path = data_path + uuid + '/' + file\n",
     "    if not os.path.exists(path): \n",
     "        raise FileExistsError\n",
-    "    adata_i = ad.read(path)\n",
+    "    adata_i = ad.read_h5ad(path)\n",
     "\n",
     "    ## compress anndata\n",
     "    adata_i = compress_anndata_delete(adata_i, groups)\n",
