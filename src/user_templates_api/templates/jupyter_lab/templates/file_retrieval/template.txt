@@ -155,14 +155,15 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "retrieve_files_remote(uuids[0], uuid_to_files[uuids[0]][0], outdir='datasets')"
+    "retrieve_files_remote(uuids[0], uuid_to_files[uuids[0]][0], outdir='data')"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The file is now locally saved under the datasets/_uuid_ folder.\n",
+    "The file is now locally saved under the data/_<uuid>_ folder.\n",
+    "Note that in the HuBMAP Workspaces, the 'datasets' folder is read only.\n",
     "\n",
     "We could also use this to save all files of a dataset locally. However, this takes quite some time."
    ]
@@ -175,7 +176,7 @@
    "source": [
     "# Run to download all files from this dataset.\n",
     "# for file in uuid_to_files[uuids[0]]: \n",
-    "#     retrieve_files_remote(uuids[0], file, outdir='datasets')"
+    "#     retrieve_files_remote(uuids[0], file, outdir='data')"
    ]
   }
 ]
