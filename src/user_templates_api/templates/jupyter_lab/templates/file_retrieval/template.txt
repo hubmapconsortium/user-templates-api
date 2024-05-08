@@ -3,7 +3,9 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "# Retrieve files with the search and assets API"
+    "# Retrieve files with the search and assets API\n",
+    "This template shows how to find existing files with the search API and retrieve these files from the assets API.\n",
+    "This can be useful if the data is not symlinked or UUIDs are added to the list later."
    ]
   },
   {
