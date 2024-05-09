@@ -45,7 +45,7 @@ numpy==1.24.1
 pandas==1.5.2
 pathspec==0.10.3
 platformdirs==2.6.2
-portal-visualization @ https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.2.3.zip#sha256=c9210acb1ed1b58cfc18a0b5d69ab62d0f533359e3c47b782caab870e1706de7
+portal-visualization @ https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.2.3.zip
 property==2.2
 prov==2.0.0
 pycodestyle==2.10.0
