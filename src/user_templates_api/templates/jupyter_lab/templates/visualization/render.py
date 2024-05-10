@@ -30,8 +30,6 @@ class JupyterLabVisualizationRender(JupyterLabRender):
                 "This notebook shows a Vitessce visualization for a dataset."
             ),
             new_code_cell(
-                "!pip uninstall community flask albumentations -y "
-                "# Preinstalled on Colab; Causes version conflicts.\n"
                 f"!pip install vitessce[all]=={version('vitessce')}"
             ),
             new_markdown_cell(
