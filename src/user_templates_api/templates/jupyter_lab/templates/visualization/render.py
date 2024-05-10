@@ -29,9 +29,7 @@ class JupyterLabVisualizationRender(JupyterLabRender):
                 "# Vitessce visualization for single dataset\n"
                 "This notebook shows a Vitessce visualization for a dataset."
             ),
-            new_code_cell(
-                f"!pip install vitessce[all]=={version('vitessce')}"
-            ),
+            new_code_cell(f"!pip install vitessce[all]=={version('vitessce')}"),
             new_markdown_cell(
                 "## Linked datasets\n"
                 "For this template, symlinking is not required. "
@@ -51,7 +49,7 @@ class JupyterLabVisualizationRender(JupyterLabRender):
                 "\n",
                 "## Once you have checked that it is installed, close this window.\n",
                 "## In the Workspace overview page, stop all jobs.\n",
-                "## Then, launch the Workspace again."
+                "## Then, launch the Workspace again.",
             ),
         ]
 
