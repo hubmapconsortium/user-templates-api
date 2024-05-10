@@ -105,20 +105,32 @@
    ]
   },
   {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If we already know the location of the zarr store on the [HuBMAP Data Portal website](https://portal.hubmapconsortium.org), we can directly run this."
+   ]
+  },
+  {
    "cell_type": "code",
    "execution_count": null,
    "metadata": {},
    "outputs": [],
    "source": [
+    "# Change this line to any zarr store that exists on the portal for the selected dataset. \n",
     "zarr_url = f'https://assets.hubmapconsortium.org/{uuids[0]}/hubmap_ui/anndata-zarr/scvelo_annotated.zarr'\n",
-    "see_remote_zarr_variables(zarr_url, verbose=False)"
+    "\n",
+    "# Uncomment the following line to see the zarr variables for this dataset. This will only work if the location is valid.\n",
+    "# see_remote_zarr_variables(zarr_url, verbose=False)"
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "There is information that can't be retrieved like this. An example is a categorical mapping or anything stored in uns. Luckily, because to store a zarr Group, we will have a .zgroup file, we can query the search API and retrieve some more information!"
+    "To get all zarr paths that exist for a dataset, we can use the search API.\n",
+    "\n",
+    "However, even if we know the zarr path already, we still want to use the search API. This is because when using the direct zarr store, there is information that can't be retrieved like this. An example is a categorical mapping or anything stored in uns. Luckily, because to store a zarr Group, we will have a .zgroup file, we can query the search API and retrieve some more information!"
    ]
   },
   {
@@ -204,19 +216,25 @@
    "metadata": {},
    "outputs": [],
    "source": [
+    "# select the first dataset\n",
+    "uuid = uuids[0]\n",
+    "\n",
     "# get dictionary and print zarr root files\n",
-    "zarr_dict = get_zarr_paths(uuids)[uuids[0]]\n",
+    "zarr_dict = get_zarr_paths(uuids)[uuid]\n",
     "\n",
     "zarr_root_files = list(zarr_dict.keys())\n",
     "print(f'Files with zarr storage for this dataset: {zarr_root_files}')\n",
     "\n",
     "# select the first zarr root file\n",
-    "selected_file = zarr_root_files[0]\n",
-    "print(f'Selected file: {selected_file}')\n",
-    "\n",
-    "# get the relative groupings for this\n",
-    "relative_files = zarr_dict[selected_file]\n",
-    "print(f'Groupings for this zarr storage: {relative_files}')"
+    "if len(zarr_root_files) == 0:\n",
+    "    raise IndexError(\"No zarr files for this dataset!\")\n",
+    "else:\n",
+    "    selected_file = zarr_root_files[1]\n",
+    "    print(f'Selected file: {selected_file}')\n",
+    "    \n",
+    "    # get the relative groupings for this\n",
+    "    relative_files = zarr_dict[selected_file]\n",
+    "    print(f'Groupings for this zarr storage: {relative_files}')"
    ]
   },
   {
@@ -226,7 +244,7 @@
    "outputs": [],
    "source": [
     "# get the zarr_url for this dataset and file\n",
-    "zarr_url = f'https://assets.hubmapconsortium.org/{uuids[0]}/{selected_file}.zarr'\n",
+    "zarr_url = f'https://assets.hubmapconsortium.org/{uuid}/{selected_file}.zarr'\n",
     "\n",
     "# get the X array\n",
     "X_arr = zarr.open(zarr_url + \"/X\")\n",
