@@ -37,19 +37,19 @@ class JupyterLabVisualizationRender(JupyterLabRender):
             ),
             *vitessce_conf.cells,
             new_code_cell(
-                "## If you get a JavaScript error when running the above cell, it is likely due \n",
-                "## to Anywidget needing to be installed before the workspace is launched.\n",
-                "\n",
-                "## Check that anywidget is installed\n",
-                "## Uncomment the following line:\n",
-                "# import anywidget \n",
-                "\n",
-                "## If it is not yet installed:\n",
-                "# !pip install anywidget\n",
-                "\n",
-                "## Once you have checked that it is installed, close this window.\n",
-                "## In the Workspace overview page, stop all jobs.\n",
-                "## Then, launch the Workspace again.",
+                "## If you get a JavaScript error when running the above cell, it is likely due \n"
+                "## to Anywidget needing to be installed before the workspace is launched.\n"
+                "\n"
+                "## Check that anywidget is installed\n"
+                "## Uncomment the following line:\n"
+                "# import anywidget \n"
+                "\n"
+                "## If it is not yet installed:\n"
+                "# !pip install anywidget\n"
+                "\n"
+                "## Once you have checked that it is installed, close this window.\n"
+                "## In the Workspace overview page, stop all jobs.\n"
+                "## Then, launch the Workspace again."
             ),
         ]
 
