@@ -9,4 +9,4 @@ We also have a slack channel for feedback on the workspaces. Please reach out to
 
 
 ## Contributors
-This project is part of the HuBMAP consortium. The main contributors to the workspaces are the [ittsburgh Supercomputing Cente](https://www.psc.edu/) and the [HIDIVE Lab](https://hidivelab.org) at [Harvard Medical School](https://hms.harvard.edu).
+This project is part of the HuBMAP consortium. The main contributors to the workspaces are the [Pittsburgh Supercomputing Center](https://www.psc.edu/) and the [HIDIVE Lab](https://hidivelab.org) at [Harvard Medical School](https://hms.harvard.edu).
