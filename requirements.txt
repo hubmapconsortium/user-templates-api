@@ -68,5 +68,5 @@ vitessce>=3.2.8
 wcwidth==0.2.6
 Werkzeug==2.2.2
 yarl==1.8.2
-zarr==2.17.2
+zarr==2.18.0
 zipp==3.11.0
