@@ -1,7 +1,6 @@
 from django.conf import settings
 from portal_visualization.client import ApiClient
 
-
 # TODO: Need to rewrite some of this so that it doesn't use flask.
 
 
