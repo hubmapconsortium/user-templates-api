@@ -10,9 +10,9 @@
     "template_format": "jinja",
     "examples": [
         {
-            "example_id": 0,
-            "description": "Look at the neturophil cluster of this slide-seq dataset and examine its Ripley's L-function",
-            "dataset_type": ["salmon_rnaseq_slideseq"],
+            "title": "Squidpy slide-seq analysis on kidney dataset",
+            "description": "Look at the neturophil cluster of this slide-seq dataset and examine its Ripley's L-function.",
+            "data_type": ["salmon_rnaseq_slideseq"],
             "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
         }
     ],
