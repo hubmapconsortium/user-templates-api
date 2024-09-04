@@ -16,5 +16,6 @@
             "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
         }
     ],
-    "is_hidden": false
-  }
+    "is_hidden": false,
+    "last_modified_unix_timestamp": 1723749414
+}

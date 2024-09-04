@@ -7,5 +7,6 @@
     ], 
     "is_multi_dataset_template": true,
     "template_format": "jinja",
-    "is_hidden": true
-  }
+    "is_hidden": true,
+    "last_modified_unix_timestamp": 1723749414
+}
