@@ -8,6 +8,14 @@
     ], 
     "is_multi_dataset_template": true,
     "template_format": "jinja",
+    "examples": [
+        {
+            "title": "Squidpy slide-seq analysis on kidney dataset",
+            "description": "Look at the neturophil cluster of this slide-seq dataset and examine its Ripley's L-function.",
+            "assay_display_name": ["Slideseq [Salmon]"],
+            "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
+        }
+    ],
     "is_hidden": false,
     "last_modified_unix_timestamp": 1723749414
 }
