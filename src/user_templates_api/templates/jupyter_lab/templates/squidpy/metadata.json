@@ -12,7 +12,7 @@
         {
             "title": "Squidpy slide-seq analysis on kidney dataset",
             "description": "Look at the neturophil cluster of this slide-seq dataset and examine its Ripley's L-function.",
-            "data_type": ["salmon_rnaseq_slideseq"],
+            "assay_display_name": ["Slideseq [Salmon]"],
             "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
         }
     ],
