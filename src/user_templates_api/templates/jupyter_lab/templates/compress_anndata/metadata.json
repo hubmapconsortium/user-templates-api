@@ -7,12 +7,12 @@
   "is_multi_dataset_template": true,
   "template_format": "jinja",
   "examples": [
-        {
-            "title": "Compress kidney h5ad file",
-            "description": "Use a h5ad file to retrieve anndata, remove all but X, obs and var, and save it.",
-            "datasets": ["0db9481caed92aec4cddc606108692d5"]
-        }
-    ],
+    {
+      "title": "Compress kidney h5ad file",
+      "description": "Use a h5ad file to retrieve anndata, remove all but X, obs and var, and save it.",
+      "datasets": ["0db9481caed92aec4cddc606108692d5"]
+    }
+  ],
   "is_hidden": false,
   "last_modified_unix_timestamp": 1723749414
 }
