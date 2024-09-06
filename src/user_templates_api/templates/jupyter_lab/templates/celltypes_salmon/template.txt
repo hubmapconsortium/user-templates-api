@@ -15,7 +15,7 @@
    "outputs": [],
    "source": [
     "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn anndata"
+    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn anndata hubmap-template-helper"
    ]
   },
   {
@@ -40,7 +40,10 @@
     "import seaborn as sns\n",
     "import altair as alt\n",
     "\n",
-    "import anndata as ad"
+    "import anndata as ad\n",
+    "\n",
+    "from hubmap_template_helper import uuids as hth_uuids\n",
+    "from hubmap_template_helper import compatibility as hth_comp"
    ]
   },
   {
@@ -60,7 +63,7 @@
    "metadata": {},
    "source": [
     "## Linked datasets\n",
-    "The following datasets were symlinked to the workspace when this template was added:"
+    "The following datasets were linked when the workspace was created."
    ]
   },
   {
@@ -73,7 +76,7 @@
     "uuids = {{ uuids | safe }}\n",
     "\n",
     "# required file_types\n",
-    "required_filestypes = ['secondary_analysis.h5ad']\n",
+    "required_filetypes = ['secondary_analysis.h5ad']\n",
     "\n",
     "# search_api\n",
     "search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'"
@@ -83,7 +86,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The following checks if the datasets are compatible with this template."
+    "This template is created for particular data types only. The following checks if the datasets are compatible with this template."
    ]
   },
   {
@@ -92,93 +95,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# This template is created for particular datatypes only.\n",
-    "# This functions checks for each uuids above whether they have the correct datatypes.\n",
-    "\n",
-    "def check_template_compatibility(uuids, accepted_datatypes=None, required_filetypes=None, search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'): \n",
-    "    '''\n",
-    "    For a set of HuBMAP UUIDs, check if valid, and return valid UUIDs.\n",
-    "    Checks if UUIDs are present in the search API. \n",
-    "    If accepted_datatypes is defined, checks if UUIDs are of any of the datatypes in accepted_datatypes.\n",
-    "    If required_filetypes is defined, checks if UUIDs have all of the required filetypes in required_filetypes.\n",
-    "\n",
-    "    Parameters\n",
-    "    ----------\n",
-    "    uuids : array of string\n",
-    "        HuBMAP UUIDs to be checked\n",
-    "    accepted_datatypes: array of string, optional\n",
-    "        accepted datatypes for template\n",
-    "    required_filetypes: array of string, optional\n",
-    "        required datatypes for template\n",
-    "    search_api: string, optional\n",
-    "        URL of search API\n",
-    "\n",
-    "    Returns\n",
-    "    -------\n",
-    "    array of string\n",
-    "        valid UUIDs\n",
-    "    '''\n",
-    "    hits = json.loads(\n",
-    "        requests.post(\n",
-    "            search_api,\n",
-    "            json={\n",
-    "                'size': 10000,\n",
-    "                'query': {'ids': {'values': uuids}},\n",
-    "                '_source': ['files', 'data_types']\n",
-    "            }, \n",
-    "        ).text\n",
-    "    )['hits']['hits']\n",
-    "\n",
-    "    # create mapping for uuid to file_types and data_types\n",
-    "    uuid_to_files = {}\n",
-    "    uuid_to_datatypes = {}\n",
-    "    for hit in hits:\n",
-    "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
-    "        uuid_to_files[hit['_id']] = file_paths\n",
-    "\n",
-    "        hit_data_type = hit['_source']['data_types']\n",
-    "        uuid_to_datatypes[hit['_id']] = hit_data_type\n",
-    "    \n",
-    "    # save uuids without warnings\n",
-    "    accepted_uuids = uuids.copy()\n",
-    "\n",
-    "    # remove unvalid uuids\n",
-    "    for uuid in uuids: \n",
-    "        # check if all uuids are found in the search api\n",
-    "        if uuid not in uuid_to_files.keys(): \n",
-    "            warnings.warn('Dataset with UUID \"' + uuid + '\" not found in Search API')\n",
-    "            accepted_uuids.remove(uuid)\n",
-    "            continue\n",
-    "\n",
-    "        if required_filetypes is not None: \n",
-    "            # check if file_types for each uuid are in required_filetypes\n",
-    "            file_types = uuid_to_files[uuid]\n",
-    "            for required_file_type in required_filetypes:\n",
-    "                if required_file_type not in file_types:\n",
-    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" does not have required file type: ' + required_file_type)\n",
-    "                    if uuid in accepted_uuids:\n",
-    "                        accepted_uuids.remove(uuid)\n",
-    "\n",
-    "        if accepted_datatypes is not None: \n",
-    "            # check if data_types for each uuid are in accepted_datatypes\n",
-    "            data_types = uuid_to_datatypes[uuid]\n",
-    "            for data_type in data_types:\n",
-    "                if data_type not in accepted_datatypes: \n",
-    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" has unaccepted data type: ' + data_type)\n",
-    "                    if uuid in accepted_uuids:\n",
-    "                        accepted_uuids.remove(uuid)\n",
-    "                    continue\n",
-    "    \n",
-    "    return accepted_uuids"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "uuids = check_template_compatibility(uuids, required_filetypes=required_filestypes, search_api=search_api)"
+    "uuids = hth_comp.check_template_compatibility(uuids, required_filetypes=required_filetypes, search_api=search_api)"
    ]
   },
   {
@@ -196,31 +113,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "def get_uuid_to_hubmap(uuids): \n",
-    "    '''\n",
-    "    Retrieve a dictionary mapping uuids to hubmap ids.\n",
-    "\n",
-    "    Parameters\n",
-    "    ----------\n",
-    "    uuids : list\n",
-    "        list with uuids\n",
-    "    \n",
-    "    Returns\n",
-    "    -------\n",
-    "    dictionary mapping uuids to hubmap ids\n",
-    "    '''\n",
-    "    ## Fetch metadata, and read it into a dataframe\n",
-    "    response = requests.post(\n",
-    "        'https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv', json={'uuids': uuids}\n",
-    "    )\n",
-    "    metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))\n",
-    "    metadata = pd.DataFrame(metadata[1:])\n",
-    "\n",
-    "    ## Create mapping from uuid to hubmap id\n",
-    "    uuid_to_hubmap = dict(zip(metadata['uuid'], metadata['hubmap_id']))\n",
-    "    return uuid_to_hubmap\n",
-    "\n",
-    "uuid_to_hubmap = get_uuid_to_hubmap(uuids)\n",
+    "uuid_to_hubmap = hth_uuids.get_uuid_to_hubmap_mapping(uuids)\n",
     "uuid_to_hubmap"
    ]
   },
@@ -298,7 +191,7 @@
     "\n",
     "    all_clid = None\n",
     "\n",
-    "    uuid_to_hubmap = get_uuid_to_hubmap(uuids)\n",
+    "    uuid_to_hubmap = hth_uuids.get_uuid_to_hubmap_mapping(uuids)\n",
     "\n",
     "    # can't loop over a single uuid \n",
     "    if(type(uuids) == str):\n",
@@ -345,13 +238,6 @@
    "source": [
     "adata_i = ad.read_h5ad('./datasets/' + uuids[1] + '/secondary_analysis.h5ad')"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
   },
   {
    "attachments": {},
