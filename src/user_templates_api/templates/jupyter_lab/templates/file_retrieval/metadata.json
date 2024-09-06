@@ -1,12 +1,19 @@
 {
-    "title": "Retrieve files with the search and assets API",
-    "description": "Use the search API to get information about datasets and use the assets API to retrieve files.",
-    "tags": [
-        "files",
-        "api"
-    ], 
-    "is_multi_dataset_template": true,
-    "template_format": "jinja",
-    "is_hidden": false,
-    "last_modified_unix_timestamp": 1723749414
+  "title": "Retrieve files with the search and assets API",
+  "description": "Use the search API to get information about datasets and use the assets API to retrieve files.",
+  "tags": [
+      "files",
+      "api"
+  ], 
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "Retrieve a full dataset",
+      "description": "Use the assets API to retrieve a full seqFISH dataset.",
+      "datasets": ["c6a254b2dc2ed46b002500ade163a7cc"]
+    }
+  ],
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1723749414
 }
