@@ -7,6 +7,15 @@ We welcome contributions! Please see our [contributing guidelines](https://githu
 
 We also have a slack channel for feedback on the workspaces. Please reach out to the HuBMAP Help Desk ([help@hubmapconsortium.org](mailto:help@hubmapconsortium.org)) to get in touch.
 
+## Deploying User Templates Locally
+- Clone the repository.
+- Generate a virtual environment (`virtualenv -p python3.9 venv`).
+- Activate the virtual environment (`source venv/bin/activate`).
+- Install the requirements (`pip install -r requirements.txt`).
+- Create a config file (`touch src/config.json`) and update it with appropriate values.
+- Run database migration (`python src/manage.py migrate`).
+- Start the server (`python src/manage.py runserver`).
+
 
 ## Contributors
 This project is part of the HuBMAP consortium. The main contributors to the workspaces are the [Pittsburgh Supercomputing Center](https://www.psc.edu/) and the [HIDIVE Lab](https://hidivelab.org) at [Harvard Medical School](https://hms.harvard.edu).
