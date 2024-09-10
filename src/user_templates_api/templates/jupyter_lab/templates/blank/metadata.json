@@ -5,6 +5,13 @@
     ], 
     "is_multi_dataset_template": true,
     "template_format": "jinja",
+    "examples": [
+      {
+        "title": "Workspace Tutorial datasets",
+        "description": "Create a blank notebook with a CODEX and Slideseq dataset linked.",
+        "datasets": ["69c70762689b20308bb049ac49653342", "a1d17fdd270a69c813b872a927dfa5f3"]
+      }
+    ],
     "is_hidden": false,
     "last_modified_unix_timestamp": 1723749414
 }
