@@ -1,12 +1,19 @@
 {
-    "title": "A descriptive title",
-    "description": "A description of the notebook",
-    "tags": [
-        "anndata",
-        "visualization"
-    ], 
-    "is_multi_dataset_template": true,
-    "template_format": "jinja",
-    "is_hidden": true,
-    "last_modified_unix_timestamp": 1723749414
+  "title": "A descriptive title",
+  "description": "A description of the notebook",
+  "tags": [
+    "anndata",
+    "visualization"
+  ], 
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "A title for this example",
+      "description": "A description of this example.",
+      "datasets": ["datasetA", "datasetB"]
+    }
+  ],
+  "is_hidden": true,
+  "last_modified_unix_timestamp": 1723749414
 }

@@ -8,6 +8,14 @@
     ],
     "is_multi_dataset_template": true,
     "template_format": "jinja",
+    "examples": [
+      {
+        "title": "Example cell types of kidney datasets",
+        "description": "Create a few interactive visualizations to example kidney celltype compositions.",
+        "required_filetypes": ["secondary_analysis.h5ad"],
+        "datasets": ["a1d17fdd270a69c813b872a927dfa5f3", "cdf9127efdfc96189845c35244d4d8ab", "fcd7a8d45be34fdccb8fa400ea81a331"]
+      }
+    ],
     "is_hidden": false,
     "last_modified_unix_timestamp": 1723749414
   }
