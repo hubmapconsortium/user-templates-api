@@ -12,7 +12,7 @@ We also have a slack channel for feedback on the workspaces. Please reach out to
 - Generate a virtual environment (`virtualenv -p python3.9 venv`).
 - Activate the virtual environment (`source venv/bin/activate`).
 - Install the requirements (`pip install -r requirements.txt`).
-- Create a config file (`touch src/config.json`) and update it with appropriate values.
+- Create a config file (`cp src/example_config.json src/config.json`) and update it with appropriate values.
 - Run database migration (`python src/manage.py migrate`).
 - Start the server (`python src/manage.py runserver`).
 
