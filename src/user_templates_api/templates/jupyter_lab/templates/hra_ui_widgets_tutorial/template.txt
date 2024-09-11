@@ -1,0 +1,194 @@
+[
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "## Usage\n",
+      "This notebook shows how to use the different widgets provided by the hra_jupyter_widgets package."
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "# linked datasets\n",
+      "uuids = {{ uuids | safe }}"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "### Install package"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "%pip install hra_jupyter_widgets"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "### Import widgets"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "import ipywidgets as widgets\n",
+      "from hra_jupyter_widgets import (\n",
+      "    EuiOrganInformation,\n",
+      "    FtuExplorer,\n",
+      "    FtuExplorerSmall,\n",
+      "    MedicalIllustration,\n",
+      "    ModelViewer\n",
+      ")"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "### Configure organ and illustration"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "# Kidney uberon id\n",
+      "organ = \"http://purl.obolibrary.org/obo/UBERON_0002113\"\n",
+      "illustration = \"https://purl.humanatlas.io/2d-ftu/kidney-renal-corpuscle\""
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "### Create and use a widget"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "medical_illustration = MedicalIllustration(selected_illustration=illustration)\n",
+      "display(medical_illustration)"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "# Create an output widget\n",
+      "output = widgets.Output()\n",
+      "\n",
+      "\n",
+      "# Create an event listener that prints to the output widget\n",
+      "# It takes a single argument - the event data\n",
+      "def cell_click(cell):\n",
+      "    with output:\n",
+      "        print(f\"Cell clicked: '{cell['label']}'\")\n",
+      "\n",
+      "\n",
+      "# Register the listener\n",
+      "medical_illustration.on_cell_click(cell_click)\n",
+      "# Listeners can be removed by calling on_cell_click with remove=True, i.e.\n",
+      "# medical_illustration.on_cell_click(cell_click, remove=True)\n",
+      "\n",
+      "display(output)"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "### Widget showcase"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "#### Eui Organ Information"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "organ_info = EuiOrganInformation(organ_iri=organ)\n",
+      "display(organ_info)"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "#### FTU explorer (small version)"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "ftu_explorer_small = FtuExplorerSmall(selected_illustration=illustration)\n",
+      "display(ftu_explorer_small)"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "#### FTU explorer (full version)"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "ftu_explorer = FtuExplorer()\n",
+      "display(ftu_explorer)"
+    ]
+  },
+  {
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "#### 3D Model Viewer"
+    ]
+  },
+  {
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "model_viewer = ModelViewer(url=\"https://cdn.humanatlas.io/digital-objects/ref-organ/kidney-female-left/v1.3/assets/3d-vh-f-kidney-l.glb\")\n",
+      "display(model_viewer)"
+    ]
+  }
+]
