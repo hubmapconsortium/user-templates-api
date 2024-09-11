@@ -3,7 +3,7 @@
   "DEBUG": true,
   "ALLOWED_HOSTS": [
     "your_host"
-  ]
+  ],
   "template_types": {
     "jupyter_lab": {
       "usw_job_type": "",
