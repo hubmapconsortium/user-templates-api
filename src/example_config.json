@@ -14,6 +14,7 @@
   "ENTITY_API_BASE": "https://entity.api.hubmapconsortium.org",
   "ELASTICSEARCH_ENDPOINT": "https://search.api.hubmapconsortium.org",
   "PORTAL_INDEX_PATH": "/v3/portal/search",
+  "UBKG_ENDPOINT": "https://ontology.api.hubmapconsortium.org",
   "SOFT_ASSAY_ENDPOINT": "https://ingest.api.hubmapconsortium.org",
   "SOFT_ASSAY_ENDPOINT_PATH": "assaytype",
   "ASSETS_ENDPOINT": "https://assets.hubmapconsortium.org",
