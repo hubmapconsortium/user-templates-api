@@ -15,12 +15,14 @@ The README contains further information about the template. At least include 1 d
 
 ## metadata.json
 The metadata.json is used to display the templates in the HuBMAP Data Portal. It consists of: 
-- title: a title of the notebook.
-- description: a 1-2 sentence description of the notebook.
-- tags: a list of tags to describe the notebook. Potential tags can be found [here](https://github.com/hubmapconsortium/user-templates-api/tree/development/src/tags.json). New tags can be added if necessary. 
-- is_multi_dataset_template: boolean describing whether template can handle more than 1 dataset
-- template_format: one of python/json/jinja. We recommend using jinja, and describe the insertion of cells for jinja below.
-- is_hidden: Any template with this field set to `true` is not shown in the Portal.
+- `title`: a title of the notebook.
+- `description`: a 1-2 sentence description of the notebook.
+- `tags`: a list of tags to describe the notebook. Potential tags can be found [here](https://github.com/hubmapconsortium/user-templates-api/tree/development/src/tags.json). New tags can be added if necessary. 
+- `is_multi_dataset_template`: boolean describing whether template can handle more than 1 dataset.
+- `template_format`: one of `python`/`json`/`jinja`. We recommend using `jinja`, and describe the insertion of cells for jinja below.
+- `examples`: array with examples that are shown in the template example pages. Each example has a `title` (string), a `description` (string), and `datasets` (array of strings). Optionally, it also has an `assay_display_name` (array) with the possible assay_display_names, and `required_filetypes` (array) with required filetypes.
+- `is_hidden`: Any template with this field set to `true` is not shown in the Portal.
+- `last_modified_unix_timestamp`: Don't set this, it is added automatically to keep track of changes.
 
 
 ## render.py
@@ -33,3 +35,13 @@ The actual template. This can be directly converted from .ipynb to .txt, or use 
 uuids = {{ uuids | safe }}
 ```
 An example can be found in the blank template.
+
+
+## Helper package
+A few functions that help with creating templates, such as a template compatibility checker, are included in a small helper package. Install it as such:
+
+```sh
+pip install hubmap-template-helper
+```
+
+Read more [here](https://github.com/thomcsmits/hubmap_template_helper).
