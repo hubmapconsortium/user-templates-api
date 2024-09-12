@@ -1,10 +1,11 @@
 {
-  "title": "Blank Notebook in R (Jupyter Lab: Python + R)",
+  "title": "Blank Notebook in R",
   "description": "Notebook only inserting UUIDs of added datasets",
   "tags": [
   ], 
   "is_multi_dataset_template": true,
   "template_format": "jinja",
+  "job_types": ["jupyter_lab_r"],
   "examples": [
     {
       "title": "Workspace Tutorial datasets",
