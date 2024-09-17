@@ -11,5 +11,6 @@
   "slide-seq": "Slide-seq data",
   "files": "Work with HuBMAP data files",
   "hra": "Human Reference Atlas data",
-  "sc": "Single cell analysis"
+  "sc": "Single cell analysis",
+  "R": "Template written in R"
 }
