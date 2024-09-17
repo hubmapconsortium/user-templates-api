@@ -7,13 +7,6 @@
   ],
   "is_multi_dataset_template": true,
   "template_format": "jinja",
-  "examples": [
-    {
-      "title": "Working with the HRA API examples",
-      "description": "Retrieve aggregate statistics, query and filter and examine extraction sites.",
-      "datasets": []
-    }
-  ],
   "is_hidden": false,
   "last_modified_unix_timestamp": 1723749414
 }
