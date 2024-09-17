@@ -1,1283 +1,602 @@
-[
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "40dd5488",
-    "metadata": {},
-    "source": [
-      "## HRA-API Documentation"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "47b355bd",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# linked datasets\n",
-      "uuids = {{ uuids | safe }}"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "e2d89b95",
-    "metadata": {},
-    "source": [
-      "# INDEX\n",
-      "1. [Installation](#install) \n",
-      "2. [Imports](#imports)\n",
-      "3. [Configuration](#config)\n",
-      "4. [Methods](#methods)\n",
-      "    1. [Database Status](#db_status) \n",
-      "    2. [Run a Sparql query](#sparql_get) \n",
-      "    3. [Run a Sparql query (POST)](#sparql_post) \n",
-      "    4. [Get aggregate results / statistics](#agg_results) \n",
-      "    5. [Given a SpatialEntity already placed relative to a reference SpatialEntity retrieve a new direct SpatialPlacement to the given SpatialEntity IRI](#spatial_entity)\n",
-      "    6. [Get all hubmap rui locations](#rui_loc)\n",
-      "    7. [Get number of ontology term occurrences for a search](#ontology_term) \n",
-      "    8. [Get number of cell type term occurrences for a search](#cell_term_occ) \n",
-      "    9.  [Get ontology term tree nodes](#ontology_nodes) \n",
-      "    10. [Get cell type tree nodes](#cell_nodes)\n",
-      "    11. [Get tissue provider names (for filtering)](#providers) \n",
-      "    12. [Get all reference organs](#ref_organs) \n",
-      "    13. [Get all nodes to form the 3D scene for an organ](#3d_scene) \n",
-      "    14. [Get all nodes to form the 3D scene of reference body, organs, and tissues](#nodes_3d) \n",
-      "    15. [Get technology names (for filtering)](#tech) \n",
-      "    16. [Get Tissue Block Results](#tissue_block) \n",
-      "    17. [Get all GTEx rui locations (if enabled)](#gtex_rui)\n",
-      "    18. [Token](#token_usage) \n",
-      "    19. [Generate a 3D corridor](#corridors)\n",
-      "    20. [Mesh-Based Collision Detection](#collision)\n",
-      "    21. [3D Cell Generation](#3d_cell)\n"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "43773186",
-    "metadata": {},
-    "source": [
-      "<a id='install'></a>\n",
-      "### Installation\n",
-      "\n",
-      "#### hra-api-client can be installed via `pip` from [PyPI](https://pypi.org/project/hra-api-client/#description).\n",
-      "***\n",
-      "> `pip install hra-api-client`\n",
-      "***\n",
-      "\n",
-      "You may also specify the version number:\n",
-      "***\n",
-      "> `pip install hra-api-client==0.10.0`\n",
-      "***"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "fd9a85aa",
-    "metadata": {},
-    "source": []
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "c3f1f6d5",
-    "metadata": {},
-    "source": [
-      "<a id='imports'></a>\n",
-      "### Imports \n",
-      "\n",
-      "We import the hra-api-client as follows:"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "e5e21389",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "import hra_api_client"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "0d6f2a35",
-    "metadata": {},
-    "source": [
-      "Although we can use hra-api-client for all our tasks, it is easier if we have individual imports as follows:"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "d9f69dc1",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "from hra_api_client.api import v1_api as default_api\n",
-      "from hra_api_client.models.aggregate_count import AggregateCount\n",
-      "from hra_api_client.models.database_status import DatabaseStatus\n",
-      "from hra_api_client.models.error_message import ErrorMessage\n",
-      "from hra_api_client.models.flat_spatial_placement import FlatSpatialPlacement\n",
-      "from hra_api_client.models.get_spatial_placement_request import GetSpatialPlacementRequest\n",
-      "from hra_api_client.models.min_max import MinMax\n",
-      "from hra_api_client.models.ontology_tree import OntologyTree\n",
-      "from hra_api_client.models.sparql_query_request import SparqlQueryRequest\n",
-      "from hra_api_client.models.spatial_entity import SpatialEntity\n",
-      "from hra_api_client.models.spatial_scene_node import SpatialSceneNode\n",
-      "from hra_api_client.models.spatial_search import SpatialSearch\n",
-      "from hra_api_client.models.tissue_block import TissueBlock"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "7c4af109",
-    "metadata": {},
-    "source": [
-      "For the purposes of this documentation we need some other libraries imported here: "
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "3952039c",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "import time\n",
-      "from pprint import pprint\n",
-      "from io import StringIO"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "a490f22e",
-    "metadata": {},
-    "source": [
-      "<a id='config'></a>\n",
-      "### Configuration\n",
-      "The HRA API can fetch data from \n",
-      "> HRA-API: https://apps.humanatlas.io/hra-api/v1 <br> \n",
-      "> Staging Server: https://apps.humanatlas.io/hra-api--staging/v1 <br>\n",
-      "> You could also use any other instance that you decide to host our code on\n",
-      "\n",
-      "You can get more information about our APIs [here](https://apps.humanatlas.io/hra-api/#/).\n",
-      "\n",
-      "You'll need to point the host in the configuration to one of the links: "
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "2e090732",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# may need to remove `v1`\n",
-      "configuration = hra_api_client.Configuration(\n",
-      "    host = \"https://apps.humanatlas.io/api\" \n",
-      ")"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "9faf09af",
-    "metadata": {},
-    "source": [
-      "<a id='api'></a>\n",
-      "### Creating the API Instance \n",
-      "We will need to create an instance of ApiClient from hra-api-client. The configuration we created above will be passed as a parameter for the constructor. <br> <br>\n",
-      "Using the instance of ApiClient we create an instance of DefaultApi from the default_api module we imported above. This instance represents the API interface and provides methods to interact with the API endpoints defined in the OpenAPI specification."
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "3d7b7374",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "api_client = hra_api_client.ApiClient(configuration)\n",
-      "\n",
-      "api_instance = default_api.V1Api(api_client)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "ed96d236",
-    "metadata": {},
-    "source": [
-      "<a id='methods'></a>\n",
-      "### Methods\n",
-      "\n",
-      "hra-api-client provides multiple methods which we have described below. Each method is described in more detail below : "
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "4ba8a38f",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='db_status'></a>\n",
-      "#### Database Status \n",
-      "On first run the database might take some time to be ready, so we run it on loop and wait until it's ready.\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    token - (string) (optional)\n",
-      "</pre>\n",
-      "***\n",
-      "> You can still use the other methods without waiting for the database to be ready, but the initial requests might take a little longer."
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "49d052a1",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# replace dict notation with dot notation\n",
-      "db_ready = False\n",
-      "result = None\n",
-      "while not db_ready:\n",
-      "    result = api_instance.db_status()\n",
-      "    print(result)\n",
-      "    if result.status == 'Ready':\n",
-      "        db_ready = True\n",
-      "    else:\n",
-      "        print('Database not ready yet! Retrying...', result)\n",
-      "        time.sleep(2)\n",
-      "print('Database ready!\\n', result)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "173d4800",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='sparql_get'></a>\n",
-      "#### Run a SPARQL query\n",
-      "<pre>\n",
-      "Accepted Parameters: \n",
-      "    token - (string) (optional)\n",
-      "    format - (string) (optional) (use only application/json in format, any other formats will result in errors.)\n",
-      "    query - (string) (required)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "4a739313",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.sparql(query='SELECT * WHERE { ?sub ?pred ?obj . } LIMIT 10', format='application/json')\n",
-      "    # help(api_instance.sparql)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "230194fd",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='sparql_post'></a>\n",
-      "#### Run a SPARQL query (POST) \n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    token - (string) (optional)\n",
-      "    format - (string) (optional) (use only application/json in format, any other formats will result in errors.)\n",
-      "    sparql_query_request - { \"query\": \"\" } (required)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "b3533391",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "request = {\"query\": \"SELECT * WHERE { ?sub ?pred ?obj . } LIMIT 10\"}\n",
-      "# use only application/json in format, any other formats will result in errors.\n",
-      "try:\n",
-      "    # help(api_instance.sparql_post)\n",
-      "    api_response = api_instance.sparql_post(sparql_query_request=request, format='application/json')\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->sparql_post: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "2e383f49",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='agg_results'></a>\n",
-      "#### Get aggregate results / statistics\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional) \n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "20a78738",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    api_response = api_instance.aggregate_results(age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "bd967bab",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='spatial_entity'></a>\n",
-      "#### Given a SpatialEntity already placed relative to a reference SpatialEntity retrieve a new direct SpatialPlacement to the given SpatialEntity IRI &#x274C;\n",
-      "More Info : https://apps.humanatlas.io/hra-api/#/operations/get-spatial-placement\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    get_spatial_placement_request = {\n",
-      "        \"target_iri\": (string) (required)\n",
-      "        \"rui_location\": {\n",
-      "            A Spatial Entity defines a bounded cartesian space and the units it is measured in.\n",
-      "            It typically represents a real world thing, e.g., a human body, a human kidney, a tissue section,\n",
-      "            or an individual cell.\n",
-      "            \n",
-      "            \"@id\": string<uri> (required)\n",
-      "            \"@type\": (string) (required) (allowed value: SpatialEntity)\n",
-      "            \n",
-      "            \"entityId\": string<uri> (optional) (Identifier of the entity the spatial object represents)\n",
-      "            \"ccf_annotations\": array[string]<uri> (optional) (Annotations attached to the entity.)\n",
-      "            \"representation_of\": string<uri> (optional) (Identifier for the item the spatial object represents.)\n",
-      "            \"reference_organ\": string<uri> (optional) (Identifier for the organ the spatial object represents.)\n",
-      "            \n",
-      "            \"creator\": (string) (optional)\n",
-      "            \"creator_first_name\": (string) (optional)\n",
-      "            \"creator_last_name\": (string) (optional)\n",
-      "            \"creator_orcid\": (string) (optional)\n",
-      "            \"creation_date\": (string)<date>,\n",
-      "            \n",
-      "            \"x_dimension\": (number) (required),\n",
-      "            \"y_dimension\": (number) (required),\n",
-      "            \"z_dimension\": (number) (required),\n",
-      "            \"dimension_units\": (string) (required) (default: millimeters),\n",
-      "            \n",
-      "            \"label\": (string) (optional)\n",
-      "            \"comment\": (string) (optional)\n",
-      "            \"rui_rank\": (integer) (optional)\n",
-      "            \"sex\": (string) (optional)\n",
-      "            \"side\": (string) (optional) (Used for organs that come in pairs to distinguish between them, i.e. kidneys, etc)\n",
-      "            \"slice_count\": (integer) (optional)\n",
-      "            \"slice_thickness\": (number) (optional)\n",
-      "            \n",
-      "            \n",
-      "            \"placement\": {\n",
-      "                \"@id\": (string) (required),\n",
-      "                \"@type\": (string) (required) (allowed value: SpatialEntity),\n",
-      "                \"placement_date\": string<date>,\n",
-      "                \"x_translation\": (number) (required),\n",
-      "                \"y_translation\": (number) (required),\n",
-      "                \"z_translation\": (number) (required),\n",
-      "                \"translation_units\": (number) (required) (allowed value: millimeters),\n",
-      "                \"x_rotation\": (number) (required),\n",
-      "                \"y_rotation\": (number) (required),\n",
-      "                \"z_rotation\": (number) (required),\n",
-      "                \"rotation_units\": (string) (required) (allowed value: degree),\n",
-      "                \"x_scaling\": (number) (required),\n",
-      "                \"y_scaling\": (number) (required),\n",
-      "                \"z_scaling\": (number)  (optional),\n",
-      "                \"scaling_units\": (string) (required) (allowed value: degree),\n",
-      "                \"target\": (string) (required),\n",
-      "        }\n",
-      "            \n",
-      "        }\n",
-      "    }\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "4de04419",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "get_spatial_placement_request = {\n",
-      "    \"target_iri\": \"http://purl.org/ccf/latest/ccf.owl#VHFemale\",\n",
-      "    \"rui_location\": {\n",
-      "        \"@id\": \"http://purl.org/ccf/1.5/f7130161-ad0a-4801-b5a4-f6297e0f1869\",\n",
-      "        \"@type\": \"SpatialEntity\",\n",
-      "        \"creator\": \"Bruce Herr\",\n",
-      "        \"creator_first_name\": \"Bruce\",\n",
-      "        \"creator_last_name\": \"Herr\",\n",
-      "        \"creation_date\": \"2022-04-27\",\n",
-      "        \"ccf_annotations\": [\"http://purl.obolibrary.org/obo/UBERON_0002015\", \"http://purl.obolibrary.org/obo/UBERON_0000362\", \"http://purl.obolibrary.org/obo/UBERON_0004200\", \"http://purl.obolibrary.org/obo/UBERON_0001225\", \"http://purl.obolibrary.org/obo/UBERON_0001284\", \"http://purl.obolibrary.org/obo/UBERON_0002189\"],\n",
-      "        \"x_dimension\": 11,\n",
-      "        \"y_dimension\": 12,\n",
-      "        \"z_dimension\": 13,\n",
-      "        \"dimension_units\": \"millimeter\",\n",
-      "        \"placement\": {\n",
-      "            \"@id\": \"http://purl.org/ccf/1.5/f7130161-ad0a-4801-b5a4-f6297e0f1869_placement\",\n",
-      "            \"@type\": \"SpatialPlacement\",\n",
-      "            \"target\": \"http://purl.org/ccf/latest/ccf.owl#VHFLeftKidneyV1.1\",\n",
-      "            \"placement_date\": \"2022-04-27\",\n",
-      "            \"x_scaling\": 1,\n",
-      "            \"y_scaling\": 1,\n",
-      "            \"z_scaling\": 1,\n",
-      "            \"scaling_units\": \"ratio\",\n",
-      "            \"x_rotation\": -61,\n",
-      "            \"y_rotation\": 50,\n",
-      "            \"z_rotation\": -84,\n",
-      "            \"rotation_order\": \"XYZ\",\n",
-      "            \"rotation_units\": \"degree\",\n",
-      "            \"x_translation\": 20.149,\n",
-      "            \"y_translation\": 109.963,\n",
-      "            \"z_translation\": 38.79,\n",
-      "            \"translation_units\": \"millimeter\"\n",
-      "        }\n",
-      "    }\n",
-      "}\n",
-      "try:\n",
-      "    # Get spatial placement\n",
-      "    api_response = api_instance.get_spatial_placement(get_spatial_placement_request)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->get_spatial_placement: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "0a2c6460",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='rui_loc'></a>\n",
-      "#### Get all hubmap rui locations (if enabled)\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "f15c90b1",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.gtex_rui_locations(cache = True)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "6e6fc39a",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='ontology_term'></a>\n",
-      "#### Get number of ontology term occurrences for a search\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional) \n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "dabe4526",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    api_response = api_instance.ontology_term_occurences(age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "ae1132cc",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='cell_term_occ'></a>\n",
-      "#### Get number of cell type term occurrences for a search\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional) \n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "db1e1ebd",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    api_response = api_instance.cell_type_term_occurences(age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "0e8bd39d",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='ontology_nodes'></a>\n",
-      "#### Get ontology term tree nodes\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "7d5e5dd0",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.ontology_tree_model(cache=True)\n",
-      "    for item in api_response:\n",
-      "        pprint(item)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "7170f6f3",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='cell_nodes'></a>\n",
-      "#### Get cell type tree nodes\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "e27e8ac1",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.cell_type_tree_model(cache = False)\n",
-      "    for item in api_response:\n",
-      "        pprint(item)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "0965c71e",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='providers'></a>\n",
-      "#### Get tissue provider names (for filtering)\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "5ff1a305",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.provider_names(cache = True)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "1537015d",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='ref_organs'></a>\n",
-      "#### Get all reference organs\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "eeaf481b",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.reference_organs(cache = True)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "1b602f81",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='3d_scene'></a>\n",
-      "#### Get all nodes to form the 3D scene for an organ\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional)\n",
-      "    organ-iri - (string) (required)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "87710b53",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "organ_iri = \"http://purl.obolibrary.org/obo/UBERON_0004539\"\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    # Get aggregate results / statistics\n",
-      "    api_response = api_instance.reference_organ_scene(organ_iri=organ_iri, age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token\n",
-      ")\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "1afabd89",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='nodes_3d'></a>\n",
-      "#### Get all nodes to form the 3D scene of reference body, organs, and tissues\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "2160f41b",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    # Get aggregate results / statistics\n",
-      "    api_response = api_instance.scene(age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token\n",
-      ")\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "8e0e94cb",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='tech'></a>\n",
-      "#### Get technology names (for filtering)\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional)\n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "3f79894f",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try:\n",
-      "    api_response = api_instance.technology_names(cache = False)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "80c2337f",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='tissue_block'></a>\n",
-      "#### Get Tissue Block Results\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
-      "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
-      "    cache - (boolean)  (optional) (defaults to True)\n",
-      "    sex - (string)  (optional) (male, female, both)\n",
-      "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
-      "    providers - (string) (optional) \n",
-      "    ontology_terms - (string) (optional) \n",
-      "    cell_type_terms - (string) (optional) \n",
-      "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
-      "    token - (string) (optional)\n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "8f690344",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "age = MinMax(min=45.0, max=60.0)\n",
-      "bmi = MinMax(min=65.0, max=83.0)\n",
-      "cache = True\n",
-      "sex = \"female\"\n",
-      "technologies = []\n",
-      "providers = []\n",
-      "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
-      "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
-      "spatial = [SpatialSearch(\n",
-      "            x=84.0,\n",
-      "            y=146.0,\n",
-      "            z=53.0,\n",
-      "            radius=12.0,\n",
-      "            target=\"http://purl.org/ccf/latest/ccf.owl#VHFAllenBrain\",\n",
-      "        ),]\n",
-      "token = \"\"\n",
-      "\n",
-      "try:\n",
-      "    api_response = api_instance.tissue_blocks(age=age, bmi=bmi, cache=cache, ontology_terms=ontology_terms, cell_type_terms=cell_type_terms, providers=providers, sex=sex, spatial=spatial, technologies=technologies, token=token\n",
-      ")\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "9cafd1d8",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='gtex_rui'></a>\n",
-      "#### Get all GTEx rui locations (if enabled)\n",
-      "<pre>\n",
-      "Accepted Parameters:\n",
-      "    cache - (boolean) (optional) \n",
-      "</pre>"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "3af8f4db",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "try: \n",
-      "    api_response = api_instance.gtex_rui_locations(cache = False)\n",
-      "    pprint(api_response)\n",
-      "except hra_api_client.ApiException as e:\n",
-      "    print(\"Exception when calling DefaultApi->aggregate_results: %s\\n\" % e)"
-    ]
-  },
-  {
-    "attachments": {},
-    "cell_type": "markdown",
-    "id": "1484a7ff",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='token_usage'></a>\n",
-      "#### Token Usage"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "a6157188",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "token = 'abbee123099245'\n",
-      "result = api_instance.db_status(token=token)\n",
-      "pprint(result)"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "acbf417a",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='corridors'></a>\n",
-      "#### Generate a 3D corridor"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "4753f26a",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# Provide a RUI location via the RUI at https://apps.humanatlas.io/rui/\n",
-      "extraction_site = {\n",
-      "    \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
-      "    \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5\",\n",
-      "    \"@type\": \"SpatialEntity\",\n",
-      "    \"creator\": \"demo demo\",\n",
-      "    \"creator_first_name\": \"demo\",\n",
-      "    \"creator_last_name\": \"demo\",\n",
-      "    \"creation_date\": \"2024-08-20\",\n",
-      "    \"ccf_annotations\": [\n",
-      "        \"http://purl.obolibrary.org/obo/UBERON_0002015\",\n",
-      "        \"http://purl.obolibrary.org/obo/UBERON_0002189\"\n",
-      "    ],\n",
-      "    \"x_dimension\": 10,\n",
-      "    \"y_dimension\": 10,\n",
-      "    \"z_dimension\": 10,\n",
-      "    \"dimension_units\": \"millimeter\",\n",
-      "    \"placement\": {\n",
-      "        \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
-      "        \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5_placement\",\n",
-      "        \"@type\": \"SpatialPlacement\",\n",
-      "        \"target\": \"https://purl.humanatlas.io/ref-organ/kidney-female-right/v1.3#primary\",\n",
-      "        \"placement_date\": \"2024-08-20\",\n",
-      "        \"x_scaling\": 1,\n",
-      "        \"y_scaling\": 1,\n",
-      "        \"z_scaling\": 1,\n",
-      "        \"scaling_units\": \"ratio\",\n",
-      "        \"x_rotation\": 0,\n",
-      "        \"y_rotation\": 0,\n",
-      "        \"z_rotation\": 0,\n",
-      "        \"rotation_order\": \"XYZ\",\n",
-      "        \"rotation_units\": \"degree\",\n",
-      "        \"x_translation\": 72.366,\n",
-      "        \"y_translation\": 79.067,\n",
-      "        \"z_translation\": 34.77,\n",
-      "        \"translation_units\": \"millimeter\"\n",
-      "    }\n",
-      "}\n",
-      "\n",
-      "# POST the extraction site\n",
-      "model = api_instance.corridor(extraction_site)"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "09075bd6",
-    "metadata": {},
-    "source": [
-      "Save corridor to file:"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "74fcb536",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "corridor_file_name = \"corridor.glb\"\n",
-      "\n",
-      "# \"ab\" mode to append\n",
-      "with open(corridor_file_name, \"wb\") as binary_file:\n",
-      "\n",
-      "    # Write bytes to file\n",
-      "    binary_file.write(model)"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "a7c4fad1",
-    "metadata": {},
-    "source": [
-      "##### Display with `pyvista`"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "fdb827fe",
-    "metadata": {},
-    "source": [
-      "Make sure to run:\n",
-      "`pip install \"pyvista[jupyter]\"`"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "073db386",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "import pyvista\n",
-      "from pyvista import examples\n",
-      "from itkwidgets import view\n",
-      "\n",
-      "pl = pyvista.Plotter()\n",
-      "pl.import_gltf(corridor_file_name)\n",
-      "pl.camera.zoom(1.0)\n",
-      "pl.show()"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "6ceb5a43",
-    "metadata": {},
-    "source": [
-      "##### Display with `k3d`/`vtk`"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "3d232ee1",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "import k3d\n",
-      "import vtk\n",
-      "import ipywidgets as widgets\n",
-      "\n",
-      "reader = vtk.vtkGLTFReader()\n",
-      "reader.SetFileName(corridor_file_name)\n",
-      "reader.Update()\n",
-      "\n",
-      "plot = k3d.plot()\n",
-      "mb = reader.GetOutput()\n",
-      "\n",
-      "iterator = mb.NewIterator()\n",
-      "\n",
-      "vtk_polyobjects = []\n",
-      "while not iterator.IsDoneWithTraversal():\n",
-      "    item = iterator.GetCurrentDataObject()\n",
-      "    vtk_polyobjects.append(item)\n",
-      "    iterator.GoToNextItem()\n",
-      "\n",
-      "\n",
-      "for obj in vtk_polyobjects:\n",
-      "    plot += k3d.vtk_poly_data(obj, color=0x222222)\n",
-      "plot.display()\n",
-      "\n",
-      "debug_info = widgets.HTML()"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "ebd70311",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='collision'></a>\n",
-      "#### Mesh-Based Collision Detection"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "8fe568bf",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# Provide a RUI location via the RUI at https://apps.humanatlas.io/rui/\n",
-      "extraction_site = {\n",
-      "    \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
-      "    \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5\",\n",
-      "    \"@type\": \"SpatialEntity\",\n",
-      "    \"creator\": \"demo demo\",\n",
-      "    \"creator_first_name\": \"demo\",\n",
-      "    \"creator_last_name\": \"demo\",\n",
-      "    \"creation_date\": \"2024-08-20\",\n",
-      "    \"ccf_annotations\": [\n",
-      "        \"http://purl.obolibrary.org/obo/UBERON_0002015\",\n",
-      "        \"http://purl.obolibrary.org/obo/UBERON_0002189\"\n",
-      "    ],\n",
-      "    \"x_dimension\": 10,\n",
-      "    \"y_dimension\": 10,\n",
-      "    \"z_dimension\": 10,\n",
-      "    \"dimension_units\": \"millimeter\",\n",
-      "    \"placement\": {\n",
-      "        \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
-      "        \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5_placement\",\n",
-      "        \"@type\": \"SpatialPlacement\",\n",
-      "        \"target\": \"https://purl.humanatlas.io/ref-organ/kidney-female-right/v1.3#primary\",\n",
-      "        \"placement_date\": \"2024-08-20\",\n",
-      "        \"x_scaling\": 1,\n",
-      "        \"y_scaling\": 1,\n",
-      "        \"z_scaling\": 1,\n",
-      "        \"scaling_units\": \"ratio\",\n",
-      "        \"x_rotation\": 0,\n",
-      "        \"y_rotation\": 0,\n",
-      "        \"z_rotation\": 0,\n",
-      "        \"rotation_order\": \"XYZ\",\n",
-      "        \"rotation_units\": \"degree\",\n",
-      "        \"x_translation\": 72.366,\n",
-      "        \"y_translation\": 79.067,\n",
-      "        \"z_translation\": 34.77,\n",
-      "        \"translation_units\": \"millimeter\"\n",
-      "    }\n",
-      "}\n",
-      "\n",
-      "# Get mesh-based collisions\n",
-      "pprint(api_instance.collisions(extraction_site))"
-    ]
-  },
-  {
-    "cell_type": "markdown",
-    "id": "13760167",
-    "metadata": {},
-    "source": [
-      "***\n",
-      "<a id='3d_cell'></a>\n",
-      "#### 3D Cell Generation"
-    ]
-  },
-  {
-    "cell_type": "code",
-    "execution_count": null,
-    "id": "9773778c",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-      "# import pandas to convert API response into a DataFrame for easier downstream handling\n",
-      "import pandas as pd\n",
-      "\n",
-      "# Create your request parameters\n",
-      "params = {\n",
-      "    \"file\": \"https://cdn.humanatlas.io/digital-objects/ref-organ/kidney-female-left/v1.3/assets/3d-vh-f-kidney-l.glb\",\n",
-      "    \"file_subpath\": \"VH_F_renal_pyramid_L_a\",\n",
-      "    \"num_nodes\": 10,\n",
-      "    \"node_distribution\": {\n",
-      "        \"KEY1\": 0.1,\n",
-      "        \"KEY2\": 0.3\n",
-      "    }\n",
-      "}\n",
-      "\n",
-      "# The result is a list of objects with x, y, z positions and types, accoording to the distribution and number of nodes specified in the parameters\n",
-      "response = api_instance.mesh3d_cell_population(params)\n",
-      "\n",
-      "# Convert to string\n",
-      "as_string = str(response, 'utf-8')\n",
-      "\n",
-      "# Convert the string to a DataFrame\n",
-      "df = pd.read_csv(StringIO(as_string))\n",
-      "\n",
-      "# Display the DataFrame\n",
-      "print(df)"
-    ]
-  }
-]
+{
+  "cells": [
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "40dd5488",
+      "metadata": {},
+      "source": [
+        "## HRA API Usage\n",
+        "This notebook shows how to use the HRA API method calls provided by the `hra_api_client` package. We will show how to set up the client and make a few calls. Refer to the usage notebook [here](https://github.com/x-atlas-consortia/hra-api/blob/main/notebooks/hra-api-client-usage.ipynb) and to the API documentation on <https://apps.humanatlas.io/api/> for additional documentation, methods, and examples."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b5d71a77",
+      "metadata": {},
+      "source": [
+        "### Install package\n",
+        "For this notebook, we'll install the `hra-api-client` and a set of HRA UI widgets called `hra-jupyter-widgets`."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "54983b34",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "%pip install hra-api-client hra-jupyter-widgets"
+      ]
+    },
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "c3f1f6d5",
+      "metadata": {},
+      "source": [
+        "<a id='imports'></a>\n",
+        "### Imports \n",
+        "\n",
+        "We import the hra-api-client as follows:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "id": "e5e21389",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import hra_api_client"
+      ]
+    },
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "0d6f2a35",
+      "metadata": {},
+      "source": [
+        "Although we can use hra-api-client for all our tasks, it is easier if we have individual imports as follows:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "id": "d9f69dc1",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "from hra_api_client.api import v1_api\n",
+        "from hra_api_client.api import hra_pop_api\n",
+        "from hra_api_client.api import ds_graph_api\n",
+        "from hra_api_client.models.aggregate_count import AggregateCount\n",
+        "from hra_api_client.models.database_status import DatabaseStatus\n",
+        "from hra_api_client.models.error_message import ErrorMessage\n",
+        "from hra_api_client.models.flat_spatial_placement import FlatSpatialPlacement\n",
+        "from hra_api_client.models.get_spatial_placement_request import GetSpatialPlacementRequest\n",
+        "from hra_api_client.models.min_max import MinMax\n",
+        "from hra_api_client.models.ontology_tree import OntologyTree\n",
+        "from hra_api_client.models.sparql_query_request import SparqlQueryRequest\n",
+        "from hra_api_client.models.spatial_entity import SpatialEntity\n",
+        "from hra_api_client.models.spatial_scene_node import SpatialSceneNode\n",
+        "from hra_api_client.models.spatial_search import SpatialSearch\n",
+        "from hra_api_client.models.tissue_block import TissueBlock"
+      ]
+    },
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "7c4af109",
+      "metadata": {},
+      "source": [
+        "For the purposes of this demonstration we need some other libraries imported here: "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "id": "3952039c",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import time\n",
+        "from pprint import pprint\n",
+        "from hra_jupyter_widgets import ModelViewer"
+      ]
+    },
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "9faf09af",
+      "metadata": {},
+      "source": [
+        "### Creating the API Instance \n",
+        "We will now create an instance of the API client to use methods provided by the HRA API."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 5,
+      "id": "3d7b7374",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Client configuration, the default API endpoint is https://apps.humanatlas.io/api\n",
+        "configuration = hra_api_client.Configuration(\n",
+        "    host = \"https://apps.humanatlas.io/api\" \n",
+        ")\n",
+        "\n",
+        "# Base Client Object\n",
+        "api_client = hra_api_client.ApiClient(configuration)\n",
+        "\n",
+        "# Instance with which to call the primary /v1 routes from our API\n",
+        "api_instance = v1_api.V1Api(api_client)\n",
+        "\n",
+        "# Instance with which to call the /hra-pop routes\n",
+        "hra_pop_api_instance = hra_pop_api.HraPopApi(api_client)\n",
+        "\n",
+        "# Instance with which to call the /ds-graph routes\n",
+        "ds_graph_api_instance = ds_graph_api.DsGraphApi(api_client)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "536f4af1",
+      "metadata": {},
+      "source": [
+        "## Aggregate statistics\n",
+        "To get a quick idea of what data is available in the HRA API, you can use the `aggregate_results` method. With no options, it returns various counts for all default (federated) data."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "e42d97af",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "api_response = api_instance.aggregate_results()\n",
+        "for x in api_response:\n",
+        "  print(x.count, x.label)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "9afdfe07",
+      "metadata": {},
+      "source": [
+        "## Get a session token for HuBMAP data\n",
+        "You can limit to certain sets of data by creating a session token. We will create a session for just HuBMAP data. Filters, discussed later, can also be used here to make a smaller set of data for more targeted studies.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "2cd78368",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Session configuration. You can add your HuBMAP token after ?token= to get private data\n",
+        "session_configuration = { \"dataSources\": [\"https://apps.humanatlas.io/api/ds-graph/hubmap?token=\"] }\n",
+        "\n",
+        "# Get a session token for this configuration\n",
+        "api_response = api_instance.session_token(session_configuration)\n",
+        "token=api_response.token\n",
+        "print(token)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "f7c9d42e",
+      "metadata": {},
+      "source": [
+        "After we get the session token, we wait to make sure the session is ready."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "49d052a1",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "db_ready = False\n",
+        "while not db_ready:\n",
+        "    api_response = api_instance.db_status(token)\n",
+        "    print(api_response)\n",
+        "    if api_response.status == 'Ready':\n",
+        "        db_ready = True\n",
+        "    else:\n",
+        "        print('Database not ready yet! Retrying...')\n",
+        "        time.sleep(2)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "053ef46e",
+      "metadata": {},
+      "source": [
+        "## Examine the HuBMAP data\n",
+        "Now we can check the data available in the session we created"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "180bfa92",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# get aggregate statistics\n",
+        "api_response = api_instance.aggregate_results(token=token)\n",
+        "for x in api_response:\n",
+        "  print(x.count, x.label)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "4f4c3fcb",
+      "metadata": {},
+      "source": [
+        "Let's get all of the tissue blocks (with a RUI location) in HuBMAP"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "3b35d563",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# get all tissue blocks\n",
+        "api_response = api_instance.tissue_blocks(token=token)\n",
+        "\n",
+        "# print first five block links\n",
+        "for x in api_response[0:5]:\n",
+        "  print(x.link)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ab610593",
+      "metadata": {},
+      "source": [
+        "## Filter the HuBMAP data"
+      ]
+    },
+    {
+      "attachments": {},
+      "cell_type": "markdown",
+      "id": "2e383f49",
+      "metadata": {},
+      "source": [
+        "Certain parameters can be used to filter the data. Most methods that query the data have these filters to use:\n",
+        "<pre>\n",
+        "    age - (MinMax) (optional) (min = 1.0; max = 110.0)\n",
+        "    bmi - (MinMax) (optional) (min = 13.0; max = 83.0)\n",
+        "    sex - (string)  (optional) (male, female, both)\n",
+        "    technologies - (string) (optional) (List of technologies - api_instance.technology_names)\n",
+        "    providers - (string) (optional) \n",
+        "    ontology_terms - (string) (optional) (List of ontology terms)\n",
+        "    cell_type_terms - (string) (optional) (List of ontology tems)\n",
+        "    spatial - SpatialSearch(x, y, z, radius, target) (optional) \n",
+        "    token - (string) (optional) the session token, if not provided it will use the default dataset\n",
+        "</pre>\n",
+        "\n",
+        "Example instantantiations of the filters are below."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "20a78738",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "age = MinMax(min=45.0, max=60.0)\n",
+        "bmi = MinMax(min=65.0, max=83.0)\n",
+        "sex = \"Female\"\n",
+        "technologies = []\n",
+        "providers = []\n",
+        "ontology_terms = [\"http://purl.obolibrary.org/obo/UBERON_0000955\",]\n",
+        "cell_type_terms = [\"http://purl.obolibrary.org/obo/CL_0000000\",] \n",
+        "spatial = [SpatialSearch(\n",
+        "            x=84.0,\n",
+        "            y=146.0,\n",
+        "            z=53.0,\n",
+        "            radius=12.0,\n",
+        "            target=\"https://purl.humanatlas.io/ref-organ/brain-female#primary\"\n",
+        "        ),]\n",
+        "\n",
+        "# get filtered aggregate statistics\n",
+        "api_response = api_instance.aggregate_results(\n",
+        "                    age=age,\n",
+        "                    bmi=bmi, \n",
+        "                    ontology_terms=ontology_terms,\n",
+        "                    cell_type_terms=cell_type_terms, \n",
+        "                    providers=providers,\n",
+        "                    sex=sex,\n",
+        "                    spatial=spatial,\n",
+        "                    technologies=technologies,\n",
+        "                    token=token)\n",
+        "for x in api_response:\n",
+        "  print(x.count, x.label)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "7ec49d8f",
+      "metadata": {},
+      "source": [
+        "Another way to manage these filters is to create a Dictionary and use python's `**kwargs` syntax to create and pass around a filter object. We'll use this filter object for several methods below."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "431c8aac",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "filter = {\n",
+        "  \"age\": MinMax(min=45.0, max=60.0),\n",
+        "  \"bmi\": MinMax(min=65.0, max=83.0),\n",
+        "  \"sex\": \"Female\",\n",
+        "  \"technologies\": [],\n",
+        "  \"providers\": [],\n",
+        "  \"ontology_terms\": [\"http://purl.obolibrary.org/obo/UBERON_0000955\"],\n",
+        "  \"cell_type_terms\": [\"http://purl.obolibrary.org/obo/CL_0000000\"],\n",
+        "  \"spatial\": [\n",
+        "    SpatialSearch(\n",
+        "      x=84.0,\n",
+        "      y=146.0,\n",
+        "      z=53.0,\n",
+        "      radius=12.0,\n",
+        "      target=\"https://purl.humanatlas.io/ref-organ/brain-female#primary\"\n",
+        "    )\n",
+        "  ]\n",
+        "}\n",
+        "\n",
+        "# get filtered aggregate statistics\n",
+        "api_response = api_instance.aggregate_results(token=token, **filter)\n",
+        "for x in api_response:\n",
+        "  print(x.count, x.label)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f64b8987",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# get anatomical structures that the tissue blocks collided with\n",
+        "api_response = api_instance.ontology_term_occurences(token=token, **filter)\n",
+        "\n",
+        "# Print the first 5 results\n",
+        "for (anatomical_structure, count) in list(api_response.items())[0:5]:\n",
+        "  print(anatomical_structure, count)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "a972877d",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# get cell types located in anatomical structures that the tissue blocks collided with\n",
+        "api_response = api_instance.cell_type_term_occurences(token=token, **filter)\n",
+        "\n",
+        "# Print the first 5 results\n",
+        "for (cell_type, count) in list(api_response.items())[0:5]:\n",
+        "  print(cell_type, count)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "98d83caf",
+      "metadata": {},
+      "source": [
+        "## Query the HRA Knowledge Graph with SPARQL\n",
+        "The HRA API provides a SPARQL endpoint to query the HRA knowledge graph. This allows you to select out very specific data using advanced SPARQL querying. \n",
+        "\n",
+        "To demonstrate, let's get all the anatomical structures in the latest HRA release."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f2db2619",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "query = '''\n",
+        "PREFIX ccf: <http://purl.org/ccf/>\n",
+        "SELECT ?as ?label\n",
+        "FROM <https://purl.humanatlas.io/collection/hra>\n",
+        "WHERE {\n",
+        "  ?as ccf:ccf_asctb_type ?type ;\n",
+        "    ccf:ccf_pref_label ?label .\n",
+        "  FILTER(?type = 'AS')\n",
+        "}\n",
+        "'''\n",
+        "api_response = api_instance.sparql(query=query)\n",
+        "rows = api_response['results']['bindings']\n",
+        "\n",
+        "as_lookup = dict([ (row['as']['value'], row['label']['value']) for row in rows ])\n",
+        "\n",
+        "# Print the first 5 results\n",
+        "for (anatomical_structure, label) in list(as_lookup.items())[0:5]:\n",
+        "  print(anatomical_structure, label)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "4434af2f",
+      "metadata": {},
+      "source": [
+        "If your SPARQL query is longer (thousands of characters), you can do a SPARQL POST which allows for sending more data."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "70bef89a",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "api_response = api_instance.sparql_post({'query': query})\n",
+        "rows = api_response['results']['bindings']\n",
+        "\n",
+        "as_lookup = dict([ (row['as']['value'], row['label']['value']) for row in rows ])\n",
+        "\n",
+        "# Print the first 5 results\n",
+        "for (anatomical_structure, label) in list(as_lookup.items())[0:5]:\n",
+        "  print(anatomical_structure, label)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "579311b2",
+      "metadata": {},
+      "source": [
+        "## Working with extraction sites (aka RUI locations)\n",
+        "After obtaining an extraction site either via the RUI or from queries like above, there are a few things you can do with this data."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "acbf417a",
+      "metadata": {},
+      "source": [
+        "### Generate a 3D corridor\n",
+        "\n",
+        "We can compute a corridor from any extraction site. A corridor shows where else an extraction site could go in the same organ and still maintain the same overlaps with anatomical structures. We will take an example extraction site and see what it's corridor looks like."
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "8a5e9e88",
+      "metadata": {},
+      "source": [
+        "An example extraction site:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 17,
+      "id": "4753f26a",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Provide a RUI location via the RUI at https://apps.humanatlas.io/rui/\n",
+        "extraction_site = {\n",
+        "    \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
+        "    \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5\",\n",
+        "    \"@type\": \"SpatialEntity\",\n",
+        "    \"creator\": \"demo demo\",\n",
+        "    \"creator_first_name\": \"demo\",\n",
+        "    \"creator_last_name\": \"demo\",\n",
+        "    \"creation_date\": \"2024-08-20\",\n",
+        "    \"ccf_annotations\": [\n",
+        "        \"http://purl.obolibrary.org/obo/UBERON_0002015\",\n",
+        "        \"http://purl.obolibrary.org/obo/UBERON_0002189\"\n",
+        "    ],\n",
+        "    \"x_dimension\": 10,\n",
+        "    \"y_dimension\": 10,\n",
+        "    \"z_dimension\": 10,\n",
+        "    \"dimension_units\": \"millimeter\",\n",
+        "    \"placement\": {\n",
+        "        \"@context\": \"https://hubmapconsortium.github.io/ccf-ontology/ccf-context.jsonld\",\n",
+        "        \"@id\": \"http://purl.org/ccf/1.5/cc837df1-2788-4510-9c21-9eb0e9b310a5_placement\",\n",
+        "        \"@type\": \"SpatialPlacement\",\n",
+        "        \"target\": \"https://purl.humanatlas.io/ref-organ/kidney-female-right/v1.3#primary\",\n",
+        "        \"placement_date\": \"2024-08-20\",\n",
+        "        \"x_scaling\": 1,\n",
+        "        \"y_scaling\": 1,\n",
+        "        \"z_scaling\": 1,\n",
+        "        \"scaling_units\": \"ratio\",\n",
+        "        \"x_rotation\": 0,\n",
+        "        \"y_rotation\": 0,\n",
+        "        \"z_rotation\": 0,\n",
+        "        \"rotation_order\": \"XYZ\",\n",
+        "        \"rotation_units\": \"degree\",\n",
+        "        \"x_translation\": 72.366,\n",
+        "        \"y_translation\": 79.067,\n",
+        "        \"z_translation\": 34.77,\n",
+        "        \"translation_units\": \"millimeter\"\n",
+        "    }\n",
+        "}"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b7c51796",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Generate a corridor for the extraction site\n",
+        "model = api_instance.corridor(extraction_site)\n",
+        "\n",
+        "# Display it in 3D\n",
+        "viewer = ModelViewer(data=model)\n",
+        "display(viewer)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ebd70311",
+      "metadata": {},
+      "source": [
+        "### Find anatomical structure collisions for an extraction site\n",
+        "For any extraction site, we can analyze what anatomical structures it collides with in the 3D reference organ and by how much."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "8fe568bf",
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Get mesh-based collisions\n",
+        "collisions = api_instance.collisions(extraction_site)\n",
+        "\n",
+        "pprint(collisions[0:5])"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "ee5d1ae3",
+      "metadata": {},
+      "source": [
+        "## Conclusion\n",
+        "This concludes this tutorial. Refer to the usage notebook [here](https://github.com/x-atlas-consortia/hra-api/blob/main/notebooks/hra-api-client-usage.ipynb) and to the API documentation on <https://apps.humanatlas.io/api/> for additional documentation, methods, and examples. If you have any issues, problems, or questions, feel free to file an issue on the HRA API GitHub at <https://github.com/x-atlas-consortia/hra-api>."
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3 (ipykernel)",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.10.12"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
