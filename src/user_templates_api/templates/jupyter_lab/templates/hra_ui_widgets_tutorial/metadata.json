@@ -10,7 +10,7 @@
   "examples": [
     {
       "title": "Working with the HRA UI Jupyter Widgets",
-      "description": "Example metadata and available files for four datasets.",
+      "description": "Examine the organ widget, FTU explorer, and 3D model viewer.",
       "datasets": []
     }
   ],

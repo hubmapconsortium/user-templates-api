@@ -10,7 +10,7 @@
   "examples": [
     {
       "title": "Working with the HRA API examples",
-      "description": "Example metadata and available files for four datasets.",
+      "description": "Retrieve aggregate statistics, query and filter and examine extraction sites.",
       "datasets": []
     }
   ],
