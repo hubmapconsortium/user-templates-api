@@ -1,0 +1,12 @@
+{
+  "title": "Human Reference Atlas (HRA) UI Jupyter Widgets Tutorial",
+  "description": "This notebook shows users how to instantiate and use the HuBMAP HRA UI Jupyter Widgets.",
+  "tags": [
+    "hra",
+    "visualization"
+  ],
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1723749414
+}
