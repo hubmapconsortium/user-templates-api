@@ -1,6 +1,6 @@
 {
   "title": "Index and search single cell data with scfind",
-  "description": "This notebook shows how to do fast searches of large collections of single cell data with scfind.",
+  "description": "This notebook shows how to do fast searches of large collections of single cell data with scfind. We recommend setting the memory on the workspace advanced configuration settings to at least 32GB since building the scfind index can be memory-consuming.",
   "tags": [
     "anndata",
     "sc"

@@ -5,7 +5,7 @@
    "source": [
     "# Index and search single cell data with scfind\n",
     "\n",
-    "> We recommend increasing the memory on the workspace settings as building the scfind index can be quite memory-consuming.\n",
+    "> We recommend setting the memory on the workspace advanced configuration settings to at least 32GB since building the scfind index can be memory-consuming.\n",
     "\n",
     "This notebook shows how to do fast searches of large collections of single cell data with scfind.\n",
     "scfind is an advanced single-cell analysis tool that facilitates fast search of biologically relevant marker genes in cell atlases. Utilizing an efficient compression strategy for sparse single-cell measurements, scfind builds a compact index to store the expression matrix, enabling fast queries at single-cell resolution. The central operation carried out by scfind is to identify the set of cells expressing user-specified gene combinations. This functionality supports multiple analytical applications, including marker gene identification and evaluation, in silico gating, and identifying both cell-type-specific and housekeeping genes. Furthermore, scfind incorporates a subquery optimization routine, ensuring that long and complex queries return biologically meaningful results."
