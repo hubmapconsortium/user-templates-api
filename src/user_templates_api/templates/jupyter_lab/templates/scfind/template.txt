@@ -164,7 +164,9 @@
     "\n",
     "This example utilizes an annotated AnnData object loaded from _secondary_analysis.h5ad_, with cell annotations stored in AnnData.obs and feature names stored in AnnData.var. During index construction, a dataset_name parameter can be provided. This allows for differentiation of cell types from various datasets, potentially representing organ/tissue names, donor IDs, experimental conditions, or any other meaningful identifiers to distinguish cell groups from different datasets. In this example, we add the groupings based on the time of publishing as created above. Following this step, queries can be specified within the datasets of interest.\n",
     "\n",
-    "The index building process begins with the initialization of the scfind object and building index using a single AnnData object. Subsequently, any remaining AnnData objects are merged into the existing index. This approach conserves memory when multiple large datasets are loaded. "
+    "The index building process begins with the initialization of the scfind object and building index using a single AnnData object. Subsequently, any remaining AnnData objects are merged into the existing index. This approach conserves memory when multiple large datasets are loaded. \n",
+    "\n",
+    "> This might show certain errors about detected vectors of zeros. This is to be expected."
    ]
   },
   {
