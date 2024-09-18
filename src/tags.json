@@ -9,5 +9,8 @@
   "salmon": "Spatial data analysed with Salmon",
   "codex": "CODEX data",
   "slide-seq": "Slide-seq data",
-  "files": "Work with HuBMAP data files"
+  "files": "Work with HuBMAP data files",
+  "hra": "Human Reference Atlas data",
+  "sc": "Single cell analysis",
+  "R": "Template written in R"
 }

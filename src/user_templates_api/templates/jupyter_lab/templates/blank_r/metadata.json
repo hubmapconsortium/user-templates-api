@@ -1,6 +1,6 @@
 {
   "title": "Blank Notebook",
-  "description": "Notebook only inserting UUIDs of added datasets",
+  "description": "Notebook only inserting UUIDs of added datasets.",
   "tags": ["R"], 
   "is_multi_dataset_template": true,
   "template_format": "jinja",
