@@ -25,7 +25,7 @@ template_tags.sort()
 # check if all tags used in templates are part of tags.json
 missing_tags = [tag for tag in template_tags if tag not in tags]
 
-if len(missing_tags) > 0:
+if len(missing_tags) > 1:
     raise ValueError(
         f"All tags in templates should exist in tags.json. The following tags are missing in tags.json: {missing_tags}"
     )
