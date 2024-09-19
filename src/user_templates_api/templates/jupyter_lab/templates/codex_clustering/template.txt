@@ -13,8 +13,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce==3.2.6 starlette uvicorn widgetsnbextension\n"
+    "!pip install --upgrade pip\n",
+    "!pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce==3.2.6 starlette uvicorn widgetsnbextension hubmap-template-helper\n"
    ]
   },
   {
@@ -39,7 +39,9 @@
     "from sklearn.pipeline import Pipeline\n",
     "from sklearn.preprocessing import MinMaxScaler, StandardScaler\n",
     "\n",
-    "from vitessce import VitessceChainableConfig, AnnDataWrapper"
+    "from vitessce import VitessceChainableConfig, AnnDataWrapper\n",
+    "\n",
+    "from hubmap_template_helper import compatibility as hth_comp"
    ]
   },
   {
@@ -59,8 +61,8 @@
     "# linked datasets\n",
     "uuids = {{ uuids | safe }}\n",
     "\n",
-    "# accepted datatypes \n",
-    "accepted_datatypes = ['CODEX [Cytokit + SPRM]']\n",
+    "# accepted assay_display_names\n",
+    "accepted_assay_display_names = ['CODEX [Cytokit + SPRM]']\n",
     "\n",
     "# required filetypes\n",
     "required_filetypes = ['sprm_outputs/reg001_expr.ome.tiff-cell_channel_total.csv', 'sprm_outputs/reg001_expr.ome.tiff-cell_channel_mean.csv', 'sprm_outputs/reg001_expr.ome.tiff-cell_centers.csv']\n",
@@ -73,7 +75,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The following checks if the datasets are compatible with this template."
+    "This template is created for particular data types only. The following checks if the datasets are compatible with this template."
    ]
   },
   {
@@ -82,93 +84,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# This template is created for particular datatypes only.\n",
-    "# This functions checks for each uuids above whether they have the correct datatypes.\n",
-    "\n",
-    "def check_template_compatibility(uuids, accepted_datatypes=None, required_filetypes=None, search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'): \n",
-    "    '''\n",
-    "    For a set of HuBMAP UUIDs, check if valid, and return valid UUIDs.\n",
-    "    Checks if UUIDs are present in the search API. \n",
-    "    If accepted_datatypes is defined, checks if UUIDs are of any of the datatypes in accepted_datatypes.\n",
-    "    If required_filetypes is defined, checks if UUIDs have all of the required filetypes in required_filetypes.\n",
-    "\n",
-    "    Parameters\n",
-    "    ----------\n",
-    "    uuids : array of string\n",
-    "        HuBMAP UUIDs to be checked\n",
-    "    accepted_datatypes: array of string, optional\n",
-    "        accepted datatypes for template\n",
-    "    required_filetypes: array of string, optional\n",
-    "        required datatypes for template\n",
-    "    search_api: string, optional\n",
-    "        URL of search API\n",
-    "\n",
-    "    Returns\n",
-    "    -------\n",
-    "    array of string\n",
-    "        valid UUIDs\n",
-    "    '''\n",
-    "    hits = json.loads(\n",
-    "        requests.post(\n",
-    "            search_api,\n",
-    "            json={\n",
-    "                'size': 10000,\n",
-    "                'query': {'ids': {'values': uuids}},\n",
-    "                '_source': ['files', 'assay_display_name']\n",
-    "            }, \n",
-    "        ).text\n",
-    "    )['hits']['hits']\n",
-    "\n",
-    "    # create mapping for uuid to file_types and assay_display_name\n",
-    "    uuid_to_files = {}\n",
-    "    uuid_to_datatypes = {}\n",
-    "    for hit in hits:\n",
-    "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
-    "        uuid_to_files[hit['_id']] = file_paths\n",
-    "\n",
-    "        hit_data_type = hit['_source']['assay_display_name']\n",
-    "        uuid_to_datatypes[hit['_id']] = hit_data_type\n",
-    "    \n",
-    "    # save uuids without warnings\n",
-    "    accepted_uuids = uuids.copy()\n",
-    "\n",
-    "    # remove unvalid uuids\n",
-    "    for uuid in uuids: \n",
-    "        # check if all uuids are found in the search api\n",
-    "        if uuid not in uuid_to_files.keys(): \n",
-    "            warnings.warn('Dataset with UUID \"' + uuid + '\" not found in Search API')\n",
-    "            accepted_uuids.remove(uuid)\n",
-    "            continue\n",
-    "\n",
-    "        if required_filetypes is not None: \n",
-    "            # check if file_types for each uuid are in required_filetypes\n",
-    "            file_types = uuid_to_files[uuid]\n",
-    "            for required_file_type in required_filetypes:\n",
-    "                if required_file_type not in file_types:\n",
-    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" does not have required file type: ' + required_file_type)\n",
-    "                    if uuid in accepted_uuids:\n",
-    "                        accepted_uuids.remove(uuid)\n",
-    "\n",
-    "        if accepted_datatypes is not None: \n",
-    "            # check if assay_display_name for each uuid are in accepted_datatypes\n",
-    "            assay_display_name = uuid_to_datatypes[uuid]\n",
-    "            for data_type in assay_display_name:\n",
-    "                if data_type not in accepted_datatypes: \n",
-    "                    warnings.warn('Dataset with UUID \"' + uuid + '\" has unaccepted data type: ' + data_type)\n",
-    "                    if uuid in accepted_uuids:\n",
-    "                        accepted_uuids.remove(uuid)\n",
-    "                    continue\n",
-    "    \n",
-    "    return accepted_uuids"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "uuids = check_template_compatibility(uuids, accepted_datatypes=accepted_datatypes, required_filetypes=required_filetypes, search_api=search_api)"
+    "uuids = hth_comp.check_template_compatibility(uuids, accepted_assay_display_names=accepted_assay_display_names, required_filetypes=required_filetypes, search_api=search_api)"
    ]
   },
   {
@@ -705,7 +621,6 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "255bcd80",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -724,4 +639,4 @@
     "## Then, launch the Workspace again."
    ]
   }
-]
+ ]
