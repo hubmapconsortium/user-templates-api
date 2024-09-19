@@ -12,5 +12,6 @@
   "files": "Work with HuBMAP data files",
   "hra": "Human Reference Atlas data",
   "sc": "Single cell analysis",
-  "R": "Template written in R"
+  "R": "Template written in R",
+  "zarr": "Using zarr file format"
 }
