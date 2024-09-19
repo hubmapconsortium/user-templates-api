@@ -1,6 +1,6 @@
 {
     "title": "Cluster SPRM output of CODEX data and visualize with Vitessce",
-    "description": "This template shows how to cluster CODEX data and load a new clustering into Vitessce",
+    "description": "This template shows how to cluster CODEX data and load a new clustering into Vitessce.",
     "tags": [
         "codex",
         "visualization", 

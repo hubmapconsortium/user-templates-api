@@ -1,0 +1,12 @@
+{
+  "title": "Human Reference Atlas (HRA) API Tutorial",
+  "description": "This notebook shows users how to instantiate and use the HuBMAP HRA APIs.",
+  "tags": [
+    "hra",
+    "api"
+  ],
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1723749414
+}

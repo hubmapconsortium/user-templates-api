@@ -92,6 +92,8 @@ def notebookToTxt(file_folder):
             text_txt_list[i] = '   "execution_count": null,\n'
         if '"outputs":' in text_txt_list[i]:
             text_txt_list[i] = '   "outputs": [],\n'
+        if '"id":' in text_txt_list[i]:
+            text_txt_list[i] = ""
 
     # write to txt
     with open(file_name_txt, "w") as file:

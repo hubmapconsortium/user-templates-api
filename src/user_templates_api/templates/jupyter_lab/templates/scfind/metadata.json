@@ -1,0 +1,20 @@
+{
+  "title": "Index and search single cell data with scfind",
+  "description": "This notebook shows how to do fast searches of large collections of single cell data with scfind. We recommend setting the memory on the workspace advanced configuration settings to at least 32GB since building the scfind index can be memory-consuming.",
+  "tags": [
+    "anndata",
+    "sc"
+  ], 
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "Examine kidney datasets with scfind.",
+      "description": "Build an index for two groups of kidney datasets and examine genes and cells.",
+      "datasets": ["e7bdf34c4da9f1d880f2615226e9713d", "254801a318687281ba3e473569d89a45", "044b28971204366347e7ed0b7ef0c279", "4b5dc6d04aa30a6eb0b224a7ab7d03b3", "c14b104f9e44511ddf82697bce0d1901", "2639e9e8488edddde275491cdbaae662"],
+      "resource_options": { "memory_mb" : 32768 }
+    }
+  ],
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1726668082
+}

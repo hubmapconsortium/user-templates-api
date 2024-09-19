@@ -1,6 +1,6 @@
 {
     "title": "Retrieve anndata from remote zarr storage",
-    "description": "This template shows how to work with the remote zarr stores for anndata in the HuBMAP Data Portal",
+    "description": "This template shows how to work with the remote zarr stores for anndata in the HuBMAP Data Portal.",
     "tags": [
         "zarr",
         "anndata"
