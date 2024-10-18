@@ -1,0 +1,772 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# linked datasets\n",
+    "uuids = {{ uuids | safe }}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# SpatialQuery for query of spatial transcriptomics data\n",
+    "This notebook demonstrates the application of SpatialQuery for conducting rapid spatial analyses on extensive collections of spatial transcriptomics data.\n",
+    "As an advanced spatial analysis tool, SpatialQuery facilitates the exploration of cell type relationships and patterns within spatial transcriptomics datasets. \n",
+    "Through the construction of efficient KD-tree indices for spatial locations annotated with cell types, this tool enables high-speed queries at single-cell resolution within a spatial context.\n",
+    "\n",
+    "The analytical capabilities of SpatialQuery span both single and multiple dataset scenarios:\n",
+    "\n",
+    "\n",
+    "\n",
+    "# [SpatialQuery for Single Field of View](#SpatialQuery-for-Single-Field-of-View-Analysis)\n",
+    "\n",
+    "1. [Visualization of spatial distribution of cell types](#Visualization-of-the-Spatial-Distribution-of-Cell-Types-by-plot_fov)\n",
+    "2. [Exploration of frequent patterns of cell types across the entire field of view](#Identification-of-Frequent-Patterns-of-Cell-Types-in-Single-FOV-with-find_patterns/rand)\n",
+    "3. For a given cell type of interest, analysis of neighboring cell type compositions surrounding a specific cell type of interest including:   \n",
+    "    a) [Identification of frequent patterns](#Identification-of-Frequent-Patterns-Around-a-Cell-Type-of-Interest-with-find_fp_knn/dist)\n",
+    "    \n",
+    "    b) [Enrichment analysis of patterns](#Enrichment-Analysis-of-Patterns-Around-Central-Cell-Type-with-motif_enrichment_knn/dist)\n",
+    "7. [Customized visualization tools for result interpretation](#Visualization-of-Specified-Cell-Types-around-Central-Cell-Type-with-plot_motif_celltype)\n",
+    "8. [Interactive visualization and querying with Vitessce](#Interactive-visualization-with-Vitessce)\n",
+    "\n",
+    "\n",
+    "# [Multiple Dataset Analysis](#Integrative-Analysis-of-Multiple-FOVs)\n",
+    "\n",
+    "1. [Collective exploration of frequent cell type patterns around a cell type of interest](#Identification-of-Frequent-Patterns-of-Cell-Types-accross-Multiple-FOVs-with-find_fp_knn/dist)\n",
+    "2. [Enrichment analysis of specified patterns across datasets](#Enrichment-Analysis-of-Patterns-Around-Central-Cell-Type-across-Multiple-FOVs-with-motif_enrichment_knn/dist)\n",
+    "3. For datasets sampled across various conditions or states:\n",
+    "    [Differential analysis to identify statistically significant and condition-specific cell type patterns](#Differential-Pattern-Analysis-across-Conditions-or-Tissues)\n",
+    "\n",
+    "\n",
+    "\n",
+    "By leveraging optimized spatial indexing techniques, this tool ensures efficient processing of complex spatial queries, yielding biologically meaningful results even for large-scale datasets. The implementation of KD-trees allows researchers to uncover spatial organization and cell-cell interactions in tissue samples with unprecedented speed and precision."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Setup: Install SpatialQuery package"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true,
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "!pip install \"SpatialQuery @ git+https://github.com/ShaokunAn/Spatial-Query@main\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Setup: Import dependencies "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from SpatialQuery import spatial_query\n",
+    "from SpatialQuery import spatial_query_multi\n",
+    "\n",
+    "import anndata as ad\n",
+    "from anndata import read_h5ad\n",
+    "import pandas as pd\n",
+    "import warnings\n",
+    "import os\n",
+    "from os.path import join\n",
+    "import numpy as np\n",
+    "from tqdm import tqdm\n",
+    "\n",
+    "warnings.filterwarnings(\"ignore\")\n",
+    "pd.set_option('display.max_colwidth', 1000)\n",
+    "pd.set_option('display.max_columns', 500)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Setup: Load spatial transcriptomics data\n",
+    "We use the datasets loaded within the HuBMAP Workspace, and we have tested SpatialQuery primarily with [Slide-seq datasets](https://portal.hubmapconsortium.org/search?raw_dataset_type_keyword-assay_display_name_keyword[Slide-seq][0]=Slideseq&raw_dataset_type_keyword-assay_display_name_keyword[Slide-seq][1]=Slideseq%20%5BSalmon%5D&entity_type[0]=Dataset) which include cell type annotations.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adatas = []\n",
+    "adata_h5ad_paths = []\n",
+    "adata_zarr_paths = []\n",
+    "for dataset_uuid in tqdm(uuids):\n",
+    "    h5ad_path = join(\"datasets\", dataset_uuid, \"secondary_analysis.h5ad\")\n",
+    "    zarr_path = join(\"datasets\", dataset_uuid, \"hubmap_ui\", \"anndata-zarr\", \"secondary_analysis.zarr\")\n",
+    "    adatas.append(read_h5ad(h5ad_path))\n",
+    "    adata_h5ad_paths.append(h5ad_path)\n",
+    "    adata_zarr_paths.append(zarr_path)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# SpatialQuery for Single Field of View Analysis\n",
+    "\n",
+    "This section demonstrates the application of SpatialQuery for analyzing a single field of view (FOV) in spatial transcriptomics data. The process begins with the initialization of a SpatialQuery object, which involves constructing a KD-tree using spatial location data and storing labels for each spot.\n",
+    "\n",
+    "In this example, we utilize an annotated AnnData object. The key components for initialization are:\n",
+    "\n",
+    "1. Cell annotations: Stored in AnnData.obs, accessed using the label_key parameter.\n",
+    "2. Spatial locations: Stored in AnnData.obsm, accessed using the spatial_key parameter.\n",
+    "3. Dataset identifier: An optional dataset parameter can be provided to uniquely name each FOV."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "adata = adatas[0]\n",
+    "adata_zarr_path = adata_zarr_paths[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "spatial_key = 'X_spatial'\n",
+    "label_key = 'predicted_label'\n",
+    "\n",
+    "single_sp = spatial_query(\n",
+    "    adata=adata,\n",
+    "    dataset=\"single-fov\",\n",
+    "    spatial_key=spatial_key,\n",
+    "    label_key=label_key,\n",
+    "    leaf_size=10\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Visualization of the Spatial Distribution of Cell Types by plot_fov"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "single_sp.plot_fov(\n",
+    "    min_cells_label=50,  # displaying cell types more than 50 cells\n",
+    "    title='Spatial distribution of cell types', \n",
+    "    fig_size=(10, 5)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Identification of Frequent Patterns of Cell Types in Single FOV with find_patterns/rand\n",
+    "In the absence of prior knowledge about the dataset, the find_patterns_grid and find_patterns_rand methods can be employed to identify frequent patterns of cell types in cellular neighborhoods across whole FOV. These functions serve as valuable tools for preliminary data exploration, offering insights into the spatial organization of different cell types within the tissue."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fp_grid = single_sp.find_patterns_grid(\n",
+    "    max_dist=100,      # the radius of neighborhood to be considered\n",
+    "    min_size=0,        # minimum number of cells allowed in a neighborhood\n",
+    "    min_support=0.5,   # lower bound of the support value for the frequency of each pattern\n",
+    "    if_display=True,   # whether to display spatial distribution of frequent patterns of cell types\n",
+    "    fig_size=(9, 5),   # customize size of the output figure\n",
+    "    return_cellID=False, # whether to return the IDs of neighboring cells in frequent patterns\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The identified frequent patterns and their corresponding frequencies can be accessed through 'itemsets' and 'support', respectively."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fp_grid[['support', 'itemsets']]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fp_rand = single_sp.find_patterns_rand(\n",
+    "    max_dist=100.0,\n",
+    "    n_points=1000,     # number of randomply selected points\n",
+    "    min_support=0.5,\n",
+    "    min_size=0,\n",
+    "    if_display=True,\n",
+    "    fig_size=(9, 5),\n",
+    "    seed=2024\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fp_rand"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fp_grid = single_sp.find_patterns_grid(\n",
+    "    max_dist=100,      \n",
+    "    min_size=0,        \n",
+    "    min_support=0.5,   \n",
+    "    if_display=False,   \n",
+    "    fig_size=(8, 5),   \n",
+    "    return_cellID=True, # return the IDs of neighboring cells in frequent patterns\n",
+    ")\n",
+    "\n",
+    "for motif in fp_grid['itemsets']:\n",
+    "    single_sp.plot_motif_grid(\n",
+    "        motif=motif,\n",
+    "        fp=fp_grid,\n",
+    "        fig_size=(9,5),\n",
+    "        max_dist=100.0\n",
+    "    )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Identification of Frequent Patterns Around a Cell Type of Interest with find_fp_knn/dist\n",
+    "\n",
+    "For researchers interested in exploring the microenvironment surrounding a specific cell type, SpatialQuery offers targeted analysis capabilities. Users can specify a central cell type of interest and subsequently identify frequent patterns in its neighborhood using either k-nearest neighbors (kNN) or radius-based approaches. This functionality allows for the detailed examination of cellular contexts and potential interactions specific to the chosen cell type.\n",
+    "\n",
+    "The analysis can be performed as follows:\n",
+    "\n",
+    "1. Specify the cell type of interest\n",
+    "2. Choose between kNN or radius-based neighborhood definition\n",
+    "3. Set appropriate parameters (k value for kNN or radius for radius-based approach)\n",
+    "4. Execute the pattern identification algorithm\n",
+    "5. Analyze the resulting frequent patterns in the context of the specified cell type\n",
+    "\n",
+    "In the following usecase, podocyte is studied as the central cell type."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "central_ct = 'podocyte'\n",
+    "fp_knn = single_sp.find_fp_knn(\n",
+    "    ct=central_ct,\n",
+    "    k=30,\n",
+    "    min_support=0.7\n",
+    ")\n",
+    "fp_knn"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Same functionality but using radius-based neighborhood\n",
+    "\n",
+    "central_ct = 'podocyte'\n",
+    "fp_dist = single_sp.find_fp_dist(\n",
+    "    ct=central_ct,\n",
+    "    max_dist=100,\n",
+    "    min_support=0.5,\n",
+    "    min_size=0,\n",
+    ")\n",
+    "fp_dist"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Enrichment Analysis of Patterns Around Central Cell Type with motif_enrichment_knn/dist\n",
+    "After identifying patterns of interest, either through frequent pattern analysis or based on prior knowledge, SpatialQuery enables users to perform enrichment analysis. This analysis determines whether a specific pattern is significantly enriched in the neighborhood of a central cell type using a hypergeometric test. The functions motif_enrichment_knn and motif_enrichment_dist facilitate this analysis for k-nearest neighbors (kNN) and distance-based neighborhoods, respectively.\n",
+    "\n",
+    "Key aspects of this functionality include:\n",
+    "\n",
+    "1. Pattern selection: Users can input patterns derived from frequent pattern analysis or specify custom patterns of interest.\n",
+    "2. Central cell type specification: The cell type around which the enrichment analysis will be performed.\n",
+    "3. Neighborhood definition: Choose between kNN or distance-based approaches.\n",
+    "4. Statistical testing: Utilization of the hypergeometric test to assess significance.\n",
+    "5. Result interpretation: Evaluation of enrichment levels and statistical significance.\n",
+    "\n",
+    "The output for each pattern includes the following statistics:\n",
+    "\n",
+    "1. n_center_motif: The number of pattern instances found in the neighborhoods of the central cell type.\n",
+    "2. n_center: The number of central cells.\n",
+    "3. n_motif: The total number of pattern instances across the neighborhoods of all cells.\n",
+    "4. p-values: p-values obtained from a hypergeometric test.\n",
+    "5. Corrected p-values (optional): p-values adjusted for multiple testing using the Benjamini-Hochberg (BH) method.\n",
+    "6. if_significant: Indicates whether the pattern is statistically significant in the neighborhoods of the central cell type.\n",
+    "\n",
+    "This analysis helps researchers identify statistically significant spatial associations between cell types, potentially revealing important cellular interactions or tissue organization principles."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "motif = fp_knn['itemsets'][0]\n",
+    "motif_sig_knn = single_sp.motif_enrichment_knn(\n",
+    "    ct=central_ct,\n",
+    "    motifs=motif, \n",
+    ")\n",
+    "\n",
+    "motif_sig_knn"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Same analysis but with radius-based neighborhood\n",
+    "motif = fp_dist['itemsets'][0]\n",
+    "motif_sig_dist = single_sp.motif_enrichment_dist(\n",
+    "    ct=central_ct,\n",
+    "    motifs=motif, \n",
+    ")\n",
+    "\n",
+    "motif_sig_dist"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Visualization of Specified Cell Types around Central Cell Type with plot_motif_celltype\n",
+    "Moreover, SpatialQuery supports the visualization of specified patterns around a central cell type using the plot_motif_celltype function. This feature enables researchers to visually inspect the spatial distribution of particular cellular arrangements within the tissue context. The red circle denotes the central cell type while the colorful dots correspond to neighboring cell types in given pattern."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "motif = fp_knn['itemsets'][0]\n",
+    "single_sp.plot_motif_celltype(\n",
+    "    ct=central_ct, \n",
+    "    motif=motif, \n",
+    "    fig_size=(9, 5)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Interactive visualization with Vitessce"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Interactive visualization with Vitessce currently only supports the single-FOV analysis case. Navigate beyond this section to the [Multiple Dataset Analysis](#Integrative-Analysis-of-Multiple-FOVs) section to learn more about that method."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Import the additional dependencies for Vitessce\n",
+    "import zarr\n",
+    "from vitessce import (\n",
+    "    VitessceConfig,\n",
+    "    AnnDataWrapper,\n",
+    "    ViewType as vt,\n",
+    "    CoordinationType as ct,\n",
+    "    CoordinationLevel as CL,\n",
+    ")\n",
+    "from vitessce.widget_plugins import SpatialQueryPlugin"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The following code constructs a SpatialQueryPlugin for Vitessce, which we pass when calling `vc.widget()`. This plugin adds the \"Spatial Query Manager\" view, facilitating interactive modification of query parameters and query execution via a graphical interface."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plugin = SpatialQueryPlugin(adata, spatial_key=spatial_key, label_key=label_key)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Then, we configure Vitessce with our dataset and views of interest. We initialize cell type colors so they are used consistently for both cell type annotations and cell types that appear in SpatialQuery results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "vc = VitessceConfig(schema_version=\"1.0.16\", name=\"Spatial-Query\")\n",
+    "dataset = vc.add_dataset(\"Query results\").add_object(AnnDataWrapper(\n",
+    "    adata_store=zarr.DirectoryStore(adata_zarr_path),\n",
+    "    obs_feature_matrix_path=\"X\",\n",
+    "    obs_set_paths=[f\"obs/{label_key}\"],\n",
+    "    obs_set_names=[\"Cell Type\"],\n",
+    "    obs_spots_path=f\"obsm/{spatial_key}\",\n",
+    "    feature_labels_path=\"var/hugo_symbol\",\n",
+    "    coordination_values={\n",
+    "        \"featureLabelsType\": \"Gene symbol\",\n",
+    "    }\n",
+    "))\n",
+    "\n",
+    "spatial_view = vc.add_view(\"spatialBeta\", dataset=dataset)\n",
+    "lc_view = vc.add_view(\"layerControllerBeta\", dataset=dataset)\n",
+    "sets_view = vc.add_view(\"obsSets\", dataset=dataset)\n",
+    "features_view = vc.add_view(\"featureList\", dataset=dataset)\n",
+    "sq_view = vc.add_view(\"spatialQuery\", dataset=dataset)\n",
+    "\n",
+    "obs_set_selection_scope, = vc.add_coordination(\"obsSetSelection\",)\n",
+    "obs_set_selection_scope.set_value(None)\n",
+    "\n",
+    "sets_view.use_coordination(obs_set_selection_scope)\n",
+    "sq_view.use_coordination(obs_set_selection_scope)\n",
+    "spatial_view.use_coordination(obs_set_selection_scope)\n",
+    "features_view.use_coordination(obs_set_selection_scope)\n",
+    "\n",
+    "vc.link_views([spatial_view, lc_view, sets_view, features_view],\n",
+    "    [\"additionalObsSets\", \"obsSetColor\"],\n",
+    "    [plugin.additional_obs_sets, plugin.obs_set_color]\n",
+    ")\n",
+    "vc.link_views_by_dict([spatial_view, lc_view], {\n",
+    "    \"spotLayer\": CL([\n",
+    "        {\n",
+    "            \"obsType\": \"cell\",\n",
+    "            \"spatialSpotRadius\": 15,\n",
+    "        },\n",
+    "    ])\n",
+    "})\n",
+    "\n",
+    "vc.layout((spatial_view | (lc_view / features_view)) / (sets_view | sq_view));"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Finally, we render the Vitessce widget and pass the SpatialQueryPlugin instance."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "vw = vc.widget(height=900, plugins=[plugin], remount_on_uid_change=False)\n",
+    "vw"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Integrative Analysis of Multiple FOVs\n",
+    "Morever, SpatialQuery extends its analytical capabilities to multiple FOVs, enabling integrative analysis across different samples or experimental conditions. Key features include:\n",
+    "1. Identification of frequent patterns across multiple FOVs\n",
+    "2. Enrichment analysis of cellular patterns across samples\n",
+    "3. Differential pattern analysis for datasets from multiple conditions\n",
+    "\n",
+    "To distinguish between FOVs, users should specify unique, indicative dataset names for each FOV during initialization.\n",
+    "This functionality allows researchers to validate findings across multiple samples, identify conserved spatial patterns, and reveal condition-specific changes in tissue architecture.\n",
+    "\n",
+    "For illustrative purposes, we create simulated dataset names representing \"normal\" and \"disease\" states to showcase the workflow for comparing patterns between different biological conditions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "datasets_name = ['normal'] * 5 + ['disease'] * (len(adatas) - 5)\n",
+    "multi_sp = spatial_query_multi(\n",
+    "    adatas=adatas,  \n",
+    "    datasets=datasets_name,\n",
+    "    spatial_key=spatial_key, \n",
+    "    label_key=label_key,\n",
+    "    leaf_size=10\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Identification of Frequent Patterns of Cell Types accross Multiple FOVs with find_fp_knn/dist\n",
+    "SpatialQuery provides functions find_fp_knn and find_fp_dist for identifying frequent patterns of cell types across multiple FOVs. These functions are analogous to their single-FOV counterparts. Users can explicitly define which datasets (FOVs) to include in the analysis. If not specified, the functions will, by default, use all available datasets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "central_ct = \"podocyte\"\n",
+    "fp_knn_multi = multi_sp.find_fp_knn(\n",
+    "    ct=central_ct, \n",
+    "    dataset='normal',\n",
+    "    k=30,\n",
+    "    min_support=0.5,\n",
+    "    max_dist=100\n",
+    ")\n",
+    "\n",
+    "fp_knn_multi"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Radius-based neighborhoods\n",
+    "central_ct = \"podocyte\"\n",
+    "fp_dist_multi = multi_sp.find_fp_dist(\n",
+    "    ct=central_ct, \n",
+    "    dataset='normal',\n",
+    "    max_dist=100,\n",
+    "    min_support=0.5,\n",
+    ")\n",
+    "\n",
+    "fp_dist_multi"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Enrichment Analysis of Patterns Around Central Cell Type across Multiple FOVs with motif_enrichment_knn/dist\n",
+    "SpatialQuery also extends its enrichment analysis capabilities to multiple FOVs, employing the same methodological approach as used in single FOV analysis."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# KNN neighborhoods\n",
+    "motif = fp_knn_multi['itemsets'][0]\n",
+    "motif_sig_knn_multi = multi_sp.motif_enrichment_knn(\n",
+    "    ct=central_ct,\n",
+    "    motifs=motif, \n",
+    "    dataset='normal'\n",
+    ")\n",
+    "\n",
+    "motif_sig_knn_multi"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Radius-based neighborhoods\n",
+    "motif = fp_dist_multi['itemsets'][0]\n",
+    "motif_sig_dist_multi = multi_sp.motif_enrichment_dist(\n",
+    "    ct=central_ct,\n",
+    "    motifs=motif, \n",
+    "    dataset='normal'\n",
+    ")\n",
+    "\n",
+    "motif_sig_dist_multi"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Differential Pattern Analysis across Conditions or Tissues\n",
+    "\n",
+    "When working with multiple FOVs representing different conditions or tissue types, SpatialQuery enables differential analysis of frequent patterns surrounding a specific cell type. This powerful feature allows researchers to:\n",
+    "\n",
+    "1. Compare cellular neighborhood compositions between two distinct groups of datasets\n",
+    "2. Identify patterns that are significantly enriched or depleted in one condition relative to another\n",
+    "3. Reveal condition-specific or tissue-specific changes in the microenvironment of a central cell type\n",
+    "\n",
+    "By leveraging this differential analysis, researchers can uncover alterations in tissue architecture or cellular interactions that may be associated with different biological states, disease progression, or tissue-specific organizations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "out_knn = multi_sp.differential_analysis_knn(\n",
+    "    ct=central_ct,\n",
+    "    datasets=['normal', 'disease'],\n",
+    "    k=20,\n",
+    "    min_support=0.3,\n",
+    "    max_dist=100,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "out_knn['normal']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The differential analysis reveals that a specific cell type exhibits significant enrichment in the neighborhood of podocytes under \"normal\" conditions compared to \"disease\" conditions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "out_knn['disease']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "No significant patterns in \"disease\" conditions nearby podocyte."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Same differential analysis with radius-based neighborhood\n",
+    "out_dist = multi_sp_.differential_analysis_dist(\n",
+    "    ct=central_ct,\n",
+    "    datasets=['normal', 'disease'],\n",
+    "    max_dist=100.0,\n",
+    "    min_support=0.3,\n",
+    ")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "out_dist['normal']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "out_dist['disease']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.19"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

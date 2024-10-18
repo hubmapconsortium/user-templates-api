@@ -1,0 +1,20 @@
+{
+  "title": "Analyze spatial single cell data with SpatialQuery",
+  "description": "This notebook shows how to quickly identify spatially co-occurring cell types within one or more fields of view using SpatialQuery.",
+  "tags": [
+    "anndata",
+    "visualization"
+  ], 
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "Analyze Slide-seq datasets with SpatialQuery.",
+      "description": "Use SpatialQuery to identify frequent spatial patterns.",
+      "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"],
+      "resource_options": { "memory_mb" : 32768 }
+    }
+  ],
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1726668082
+}
