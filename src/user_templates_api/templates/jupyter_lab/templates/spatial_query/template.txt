@@ -63,7 +63,7 @@
    },
    "outputs": [],
    "source": [
-    "!pip install \"SpatialQuery @ git+https://github.com/ShaokunAn/Spatial-Query@main\""
+    "!pip install -i \"https://test.pypi.org/simple/\" SpatialQuery"
    ]
   },
   {

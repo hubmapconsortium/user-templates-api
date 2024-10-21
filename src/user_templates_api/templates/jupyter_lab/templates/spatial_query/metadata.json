@@ -11,7 +11,18 @@
     {
       "title": "Analyze Slide-seq datasets with SpatialQuery.",
       "description": "Use SpatialQuery to identify frequent spatial patterns.",
-      "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"],
+      "datasets": [
+        "72fd0d8256cd9d9e9d0c75ed7b4431cc",
+        "13d882fbeae970f8fb08a6f0b76bf127",
+        "0db9481caed92aec4cddc606108692d5",
+        "51bfd85763954248725ebf69f0dde5eb",
+        "0a21f3fa27109790483f2a0729be53de",
+        "8306f9bdef96312bd36c18b45bd8e141",
+        "55452bd302046918eaeeffa62c5b5f03",
+        "aeaaa0536b87935ad50cf69f1a0c3b1a",
+        "2c84a86ab51ec3a1168d8ba573d32c0a",
+        "b07a1fb96ddc2d4119e1f9a73d9c0a6a"
+      ],
       "resource_options": { "memory_mb" : 32768 }
     }
   ],
