@@ -1,0 +1,60 @@
+[
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Scalable Cell Population Viewer\n",
+    "This notebook shows how to load the scalable cell population viewer CellPop. It loads in datasets with annotated cell types and shows these in an interactive visualization.\n",
+    "\n",
+    "> This work is under active development and will be subject to change.\n",
+    "\n",
+    "The source code can be found [here](https://github.com/hms-dbmi/cellpop). Feel free to submit issues and feature requests [here](https://github.com/hms-dbmi/cellpop/issues). \n",
+    "\n",
+    "> For now, this tool has only been tested with snRNAseq [Salmon] datasets. Other assays may not yet work."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# !pip install -i https://test.pypi.org/simple/ cellpop==0.0.2\n",
+    "# !pip install hubmap-template-helper\n",
+    "\n",
+    "from hubmap_template_helper import compatibility as hth_comp\n",
+    "from cellpop import Widget"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# linked datasets\n",
+    "uuids = {{ uuids | safe }}\n",
+    "\n",
+    "# accepted assay_display_names\n",
+    "accepted_assay_display_names=[\"snRNAseq [Salmon]\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "uuids = hth_comp.check_template_compatibility(uuids, accepted_assay_display_names=accepted_assay_display_names)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Widget(uuids = uuids)"
+   ]
+  }
+ ]
