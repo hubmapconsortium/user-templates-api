@@ -154,7 +154,7 @@
     "# SpatialQuery for Single Field of View (FOV) Analysis\n",
     "This section demonstrates the application of SpatialQuery for analyzing a single field of view (FOV) in spatial transcriptomics data. The process begins with the initialization of a SpatialQuery object, which involves constructing a KD-tree using spatial location data and storing labels for each spot.\n",
     "\n",
-    "In this example, we utilize an annotated AnnData object loaded from \"secondary_analysis.h5ad\". The key components for initialization are:\n",
+    "In this notebook, we utilize an annotated AnnData object loaded from \"secondary_analysis.h5ad\". The key components for initialization are:\n",
     "\n",
     "1. Cell annotations: Stored in AnnData.obs, accessed using the label_key parameter.\n",
     "2. Spatial locations: Stored in AnnData.obsm, accessed using the spatial_key parameter.\n",
@@ -309,7 +309,7 @@
     "4. Execute the pattern identification algorithm\n",
     "5. Analyze the resulting frequent patterns in the context of the specified cell type\n",
     "\n",
-    "In the following usecase, podocyte is studied as the central cell type."
+    "In the following usecase, podocyte is studied as the central cell type. You can set this to other cell types that are present in the datasets."
    ]
   },
   {
