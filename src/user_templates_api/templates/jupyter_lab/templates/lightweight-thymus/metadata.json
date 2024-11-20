@@ -1,0 +1,30 @@
+{
+  "title": "Lightweight thymus feature analysis using CODEX [CytoKit+SPRM]",
+  "description": "Parameterize cellpose3 to segment and quantify CODEX protein signal in thymus Hassall's corpuscles. Compare with (i) CODEX CytoKit+SPRM, (ii) 2D IMC protein, and (iii) CZI Science cellxgene single-cell RNA.",
+  "tags": [
+    "cellpose3",    
+    "codex",
+    "zarr",
+    "anndata",
+    "imc",
+    "czi",
+  ], 
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "Lightweight thymus feature analysis using CODEX [CytoKit+SPRM]",
+      "description": "Parameterize cellpose3 to segment and quantify CODEX protein signal in thymus Hassall's corpuscles. Compare with (i) CODEX CytoKit+SPRM, (ii) 2D IMC protein, and (iii) CZI Science cellxgene single-cell RNA.",
+      "assay_display_name": ["CODEX [CytoKit+SPRM]"],
+      "datasets": [
+        "43213991a54ce196d406707ffe2e86bd",
+        "822c9163d3be9b427dd0830f69a12305",
+        "d4e9ec618924a8d43cfe1e67c38c1447",
+        "37d06bb991afa2beb7b9460e746247ad",
+        "9a6403bb0423e62950926a7d4fdab45b",
+      ]
+    }
+  ],
+  "is_hidden": false,
+  "last_modified_unix_timestamp":
+}
