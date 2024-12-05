@@ -9,11 +9,11 @@
   "template_format": "jinja",
   "examples": [
     {
-      "title": "Retrieve a full dataset",
-      "description": "Use the assets API to retrieve a full seqFISH dataset.",
-      "datasets": ["c6a254b2dc2ed46b002500ade163a7cc"]
+      "title": "Retrieve files from a HuBMAP processed dataset",
+      "description": "Use the assets API to retrieve files from a Visium (no probes) [Salmon + Scanpy] dataset.",
+      "datasets": ["8fd6bb5cd1a69fc699342eb118565734"]
     }
   ],
   "is_hidden": false,
-  "last_modified_unix_timestamp": 1723749414
+  "last_modified_unix_timestamp": 1733256667
 }

@@ -1,0 +1,2 @@
+Notebook that shows how to find existing files with the search API and retrieve these files from the assets API. This is useful if the data was not symlinked prior to launching the workspace. 
+Works with: any HuBMAP processed dataset

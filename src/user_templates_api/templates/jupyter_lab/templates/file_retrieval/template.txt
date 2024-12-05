@@ -95,7 +95,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Before we can use this, we need to know what files a dataset has. We can see this on the [HuBMAP Data Portal website](https://portal.hubmapconsortium.org), but we can also retrieve this directly through the search API, as shown below."
+    "Before we can use this, we need to know what files a dataset has. We can see a listing of processing output files on the [HuBMAP Data Portal website](https://portal.hubmapconsortium.org) or retrieve this directly through the search API, as shown below."
    ]
   },
   {
@@ -179,6 +179,24 @@
     "# Run to download all files from this dataset.\n",
     "# for file in uuid_to_files[uuids[0]]: \n",
     "#     retrieve_files_remote(uuids[0], file, outdir='data')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Metadata for published processed datasets is also available in json format and can be retrieved as shown."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Run to download metadata.json files from linked datasets.\n",
+    "# for dataset in uuids: \n",
+    "#     retrieve_files_remote(dataset, 'metadata.json', outdir='data')"
    ]
   }
 ]
