@@ -4,7 +4,7 @@
    "metadata": {},
    "source": [
     "# SpatialQuery for query of spatial transcriptomics data\n",
-    "> We recommend setting the memory on the workspace advanced configuration settings to at least 32GB since building the scfind index can be memory-consuming.\n",
+    "> We recommend setting the memory on the workspace advanced configuration settings to at least 64GB since building the scfind index can be memory-consuming.\n",
     "\n",
     "This notebook elucidates the application of SpatialQuery for conducting rapid spatial analyses on extensive collections of spatial transcriptomics data. As an advanced spatial analysis tool, SpatialQuery facilitates the expeditious exploration of cell type relationships and patterns within spatial transcriptomics datasets. Through the construction of efficient KD-tree indices for spatial locations annotated with cell types, this tool enables high-speed queries at single-cell resolution within a spatial context.\n",
     "\n",
@@ -40,7 +40,7 @@
    },
    "outputs": [],
    "source": [
-    "!pip install anndata pandas scipy matplotlib mlxtend==0.23.1 seaborn scikit-learn numpy==1.24.4 zarr\n",
+    "!pip install anndata pandas scipy matplotlib mlxtend==0.23.1 seaborn scikit-learn numpy==1.24.4 zarr tqdm statsmodels vitessce esbuild_py uvicorn starlette\n",
     "!pip install -i https://test.pypi.org/simple/ SpatialQuery\n",
     "!pip install hubmap-template-helper"
    ]
@@ -100,7 +100,7 @@
    "source": [
     "search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'\n",
     "\n",
-    "accepted_assay_display_names = [\"Slideseq [Salmon]\"]"
+    "accepted_assay_display_names = [\"Slide-seq [Salmon]\"]"
    ]
   },
   {
@@ -535,7 +535,9 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "datasets_name = ['normal'] * 5 + ['disease'] * (len(adatas) - 5)\n",
+    "n_datasets = len(adatas)\n",
+    "half = round(n_datasets / 2)\n",
+    "datasets_name = ['normal'] * half + ['disease'] * (len(adatas) - half)",
     "multi_sp = spatial_query_multi(\n",
     "    adatas=adatas,  \n",
     "    datasets=datasets_name,\n",
