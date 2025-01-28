@@ -537,7 +537,7 @@
    "source": [
     "n_datasets = len(adatas)\n",
     "half = round(n_datasets / 2)\n",
-    "datasets_name = ['normal'] * half + ['disease'] * (len(adatas) - half)",
+    "datasets_name = ['normal'] * half + ['disease'] * (len(adatas) - half)\n",
     "multi_sp = spatial_query_multi(\n",
     "    adatas=adatas,  \n",
     "    datasets=datasets_name,\n",
