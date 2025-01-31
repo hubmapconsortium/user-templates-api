@@ -8,9 +8,7 @@
     "\n",
     "> This work is under active development and will be subject to change.\n",
     "\n",
-    "The source code can be found [here](https://github.com/hms-dbmi/cellpop). Feel free to submit issues and feature requests [here](https://github.com/hms-dbmi/cellpop/issues). \n",
-    "\n",
-    "> For now, this tool has only been tested with snRNAseq [Salmon] datasets. Other assays may not yet work."
+    "The source code can be found [here](https://github.com/hms-dbmi/cellpop). Feel free to submit issues and feature requests [here](https://github.com/hms-dbmi/cellpop/issues). "
    ]
   },
   {
@@ -19,11 +17,19 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# !pip install -i https://test.pypi.org/simple/ cellpop==0.0.2\n",
-    "# !pip install hubmap-template-helper\n",
-    "\n",
-    "from hubmap_template_helper import compatibility as hth_comp\n",
-    "from cellpop import Widget"
+    "# !pip install -i https://test.pypi.org/simple/ cellpop==0.1.0\n",
+    "# !pip install hubmap-template-helper"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import cellpop\n",
+    "from hubmap_template_helper import uuids as hth_uuids\n",
+    "from hubmap_template_helper import compatibility as hth_comp"
    ]
   },
   {
@@ -45,7 +51,15 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "uuids = hth_comp.check_template_compatibility(uuids, accepted_assay_display_names=accepted_assay_display_names)"
+    "# # For now, this tool has only been tested with snRNAseq [Salmon] datasets. Other assays may not yet work. If you only want to work with snRNAseq [Salmon], uncomment this cell.\n",
+    "# uuids = hth_comp.check_template_compatibility(uuids, accepted_assay_display_names=accepted_assay_display_names)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## There are multiple ways of loading CellPop. One is directly through the HuBMAP UUIDs. "
    ]
   },
   {
@@ -54,7 +68,43 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "Widget(uuids = uuids)"
+    "cellpop.CpWidget(uuids = uuids)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "You can interact with the widget, such as changing the order, sorting by metadata and changing the visual encoding. Check the `plot controls` for finegrained control."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## There are also other ways to load data, such as with the anndata locations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "mapping = hth_uuids.get_uuid_to_hubmap_mapping(uuids)\n",
+    "hubmap_ids = [mapping[uuid] for uuid in uuids]\n",
+    "\n",
+    "anndataLocationList = [f\"./datasets/{uuid}/secondary_analysis.h5ad\" for uuid in uuids]\n",
+    "\n",
+    "df = cellpop.cpAnnDataList(anndataLocationList, hubmap_ids, \"predicted_CLID\")\n",
+    "cellpop.CpWidget(df=df)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "You can also load the data with the obs locations, or from a dataframe directly. You can see more examples [here](https://github.com/hms-dbmi/cellpop/blob/main/python/example.ipynb). "
    ]
   }
  ]
