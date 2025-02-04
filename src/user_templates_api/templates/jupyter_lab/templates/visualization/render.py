@@ -25,12 +25,12 @@ class JupyterLabVisualizationRender(JupyterLabRender):
         ).vitessce_conf
 
         if not vitessce_conf or not vitessce_conf.conf or not vitessce_conf.cells:
-            vitessce_conf.cells.append(
+            return [
                 new_markdown_cell(
                     "## Error in visualization\n"
                     f"Vitessce visualization could not be displayed for dataset {uuid}."
                 )
-            )
+            ]
 
         cells = [
             new_markdown_cell(
