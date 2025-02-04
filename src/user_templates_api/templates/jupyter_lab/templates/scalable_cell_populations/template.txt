@@ -17,8 +17,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# !pip install -i https://test.pypi.org/simple/ cellpop==0.1.0\n",
-    "# !pip install hubmap-template-helper"
+    "!pip install -i https://test.pypi.org/simple/ cellpop==0.1.0\n",
+    "!pip install hubmap-template-helper"
    ]
   },
   {
