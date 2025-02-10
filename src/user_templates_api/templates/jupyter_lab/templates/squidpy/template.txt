@@ -70,7 +70,7 @@
     "uuids = {{ uuids | safe }}\n",
     "\n",
     "# accepted assay_display_names\n",
-    "accepted_assay_display_names = ['Slideseq [Salmon]']\n",
+    "accepted_assay_display_names = ['Slide-seq [Salmon]']\n",
     "\n",
     "# search_api\n",
     "search_api = 'https://search.api.hubmapconsortium.org/v3/portal/search'"

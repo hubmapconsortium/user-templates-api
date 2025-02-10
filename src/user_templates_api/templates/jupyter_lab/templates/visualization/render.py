@@ -7,8 +7,16 @@ from user_templates_api.utils.client import get_client
 
 class JupyterLabVisualizationRender(JupyterLabRender):
     def python_generate_template_data(self, data):
-        uuids = data["uuids"]
-        uuid = uuids[0]
+        uuids = data.get("uuids", [])
+        uuid = uuids[0] if uuids else None
+
+        if uuid is None:
+            return [
+                new_markdown_cell(
+                    "## Error in visualization\n"
+                    "No valid dataset UUID provided. Please ensure a dataset has been selected."
+                )
+            ]
 
         client = get_client(data["group_token"])
         entity = client.get_entity(uuid)
@@ -17,12 +25,12 @@ class JupyterLabVisualizationRender(JupyterLabRender):
         ).vitessce_conf
 
         if not vitessce_conf or not vitessce_conf.conf or not vitessce_conf.cells:
-            vitessce_conf.cells.append(
+            return [
                 new_markdown_cell(
                     "## Error in visualization\n"
                     f"Vitessce visualization could not be displayed for dataset {uuid}."
                 )
-            )
+            ]
 
         cells = [
             new_markdown_cell(
