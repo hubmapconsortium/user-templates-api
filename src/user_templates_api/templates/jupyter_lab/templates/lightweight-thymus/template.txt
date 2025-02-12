@@ -113,17 +113,9 @@
    "execution_count": null,
    "metadata": {},
    "outputs": [],
-   "source": [
+      "source": [
     "# linked datasets\n",
-    "# Select these thymus data sets from the HuBMAP Datasets page and launch a workspace.\n",
-    "# This will autopopulate the workspace with the data sets!\n",
-    "uuids = [\n",
-    "    \"43213991a54ce196d406707ffe2e86bd\",  # HBM373.LDGF.766 CODEX\n",
-    "    \"822c9163d3be9b427dd0830f69a12305\",  # HBM465.HZHH.676 CODEX\n",
-    "    \"d4e9ec618924a8d43cfe1e67c38c1447\",  # HBM887.SHVF.747 CODEX\n",
-    "    \"37d06bb991afa2beb7b9460e746247ad\",  # HBM893.CCKX.496 CODEX\n",
-    "    \"9a6403bb0423e62950926a7d4fdab45b\",  # HBM256.TVMB.842 2D IMC\n",
-    "]"
+    "uuids = {{ uuids | safe }}\n"
    ]
   },
   {
