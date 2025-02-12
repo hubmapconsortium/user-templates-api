@@ -21,10 +21,19 @@
         "822c9163d3be9b427dd0830f69a12305",
         "d4e9ec618924a8d43cfe1e67c38c1447",
         "37d06bb991afa2beb7b9460e746247ad",
-        "9a6403bb0423e62950926a7d4fdab45b",
+        "9a6403bb0423e62950926a7d4fdab45b"
       ]
     }
   ],
+  "contributors": [
+    {
+      "name": "Soo Hee Lee",
+      "affiliation": "10x Genomics",
+      "orcid": "",
+      "github": "sooheelee",
+      "email": ""
+    }
+  ],
   "is_hidden": false,
-  "last_modified_unix_timestamp":
+  "last_modified_unix_timestamp": 1739368453
 }
