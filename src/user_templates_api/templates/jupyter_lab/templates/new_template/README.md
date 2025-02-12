@@ -21,6 +21,7 @@ The metadata.json is used to display the templates in the HuBMAP Data Portal. It
 - `is_multi_dataset_template`: boolean describing whether template can handle more than 1 dataset.
 - `template_format`: one of `python`/`json`/`jinja`. We recommend using `jinja`, and describe the insertion of cells for jinja below.
 - `examples`: array with examples that are shown in the template example pages. Each example has a `title` (string), a `description` (string), and `datasets` (array of strings). These datasets are a list of uuids of [public, published datasets on the HuBMAP Data Portal](https://portal.hubmapconsortium.org/search?mapped_status_keyword-mapped_data_access_level_keyword[Published][0]=Public&entity_type[0]=Dataset). Optionally, it also has an `assay_display_name` (array) with the possible assay_display_names, and `required_filetypes` (array) with required filetypes.
+- `contributors`: array with contributors. Each contributor has a `name`, `affiliation`, `orcid`, `github_id`, `email`. All should have a `name` and `affiliation`, the other fields are optional.
 - `is_hidden`: Any template with this field set to `true` is not shown in the Portal.
 - `last_modified_unix_timestamp`: Don't set this, it is added automatically to keep track of changes.
 
