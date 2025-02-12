@@ -13,5 +13,8 @@
   "hra": "Human Reference Atlas data",
   "sc": "Single cell analysis",
   "R": "Template written in R",
-  "zarr": "Using zarr file format"
+  "zarr": "Using zarr file format",
+  "cellpose": "Using cellpose for cellular segmentation",
+  "imc": "Imaging Mass Cytometry data",
+  "czi": "Using CZI data"
 }
