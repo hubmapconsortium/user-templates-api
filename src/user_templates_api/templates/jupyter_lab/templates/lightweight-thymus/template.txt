@@ -4,22 +4,90 @@
    "metadata": {},
    "source": [
     "# [🍩] Lightweight thymus feature analysis using CODEX [CytoKit+SPRM]\n",
+    "This notebook explores data and identifies a tissue with large structures. It parameterizes cellpose to segment structures across four CODEX sample images and compare signal from the mask versus cells within the mask. Finally, it compares to thymus data sets from 2D Imaging Mass Cytometry (HuBMAP) and CZI single-cell RNA-Seq data (external). \n",
+    "\n",
+    "> This notebook is highly specific for the example datasets, and will likely not directly work with other datasets!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [0.1] Python packages"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# !pip install cellpose squidpy gitpython"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import anndata as ad\n",
+    "import ast\n",
+    "import cellpose\n",
+    "import cv2\n",
+    "import geopandas as gpd\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import scanpy as sc\n",
+    "import scipy\n",
+    "import seaborn as sns\n",
+    "import skimage as ski\n",
+    "import squidpy as sq\n",
+    "import tifffile\n",
+    "import warnings\n",
+    "import zarr\n",
+    "\n",
+    "from cellpose import core, utils, io, models, metrics, plot\n",
+    "from collections import Counter\n",
+    "from git import Repo\n",
+    "from matplotlib import pyplot as plt\n",
+    "from shapely.geometry import Polygon\n",
+    "from tqdm import tqdm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Copy cleaned up files from shlee's github repo\n",
+    "git_url = \"https://github.com/sooheelee/notebooks/\"\n",
+    "repo_dir = \"hubmap-hackathon-2024\"\n",
+    "\n",
+    "# Files of interest are in hubmap-hackathon-2024/shlee-hh-lightweight-thymus/\n",
+    "# This will error if the folder already exists\n",
+    "Repo.clone_from(git_url, repo_dir)\n",
+    "\n",
+    "repofilepath = f\"{repo_dir}/{repo_dir}/shlee-hh-lightweight-thymus/\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [0.2] Context and data sets"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Data used in the analysis are as follows.\n",
     "By team **shlee** for the HuBMAP Hackathon 20241004\n",
     "- Soo Hee Lee (https://github.com/sooheelee), individual contributor\n",
-    "- One of three winners "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "### [0.1] Context and data sets"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
+    "- One of three winners \n",
+    "\n",
     "**Problem and Goal**\n",
     "Thymus Hassall's corpuscles (HCs) are thymic epithelial cells in the medulla region of the human thymus. [H&E staining of HCs show a rosette pattern with few nuclei](https://en.wikipedia.org/wiki/Hassall%27s_corpuscles). Given cytokit cell segmentation relies on nuclei definitions, the few nuclei in HCs from 2D image data produces 'holes' in their spatial representation. The goal of this analysis is to identify HC protein markers and compare HC protein signal inside and outside of defined cells in CODEX thymus samples. The anaysis further compares the CODEX protein detection to that in a 2D IMC (Imaging Mass Cytometry) thymus sample and to a single-cell RNA-Seq thymus atlas dataset. A secondary goal is to show different ways of wrangling genomic image data.\n",
     "\n",
@@ -98,84 +166,6 @@
     "\n",
     "for sn, id in snames.items():\n",
     "    codexanndataurls[sn] = f\"{ddir}{id}{adatasuffix}\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "### [0.2] Python packages"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {
-    "scrolled": true
-   },
-   "outputs": [],
-   "source": [
-    "#! pip install cellpose\n",
-    "#! pip install squidpy\n",
-    "#! pip install gitpython"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import anndata as ad\n",
-    "import ast\n",
-    "import cellpose\n",
-    "import cv2\n",
-    "import geopandas as gpd\n",
-    "import numpy as np\n",
-    "import pandas as pd\n",
-    "import scanpy as sc\n",
-    "import scipy\n",
-    "import seaborn as sns\n",
-    "import skimage as ski\n",
-    "import squidpy as sq\n",
-    "import tifffile\n",
-    "import warnings\n",
-    "import zarr\n",
-    "\n",
-    "from cellpose import core, utils, io, models, metrics, plot\n",
-    "from collections import Counter\n",
-    "from git import Repo\n",
-    "from matplotlib import pyplot as plt\n",
-    "from shapely.geometry import Polygon\n",
-    "from tqdm import tqdm"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {
-    "scrolled": true
-   },
-   "outputs": [],
-   "source": [
-    "#! pip freeze"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Copy cleaned up files from shlee's github repo\n",
-    "git_url = \"https://github.com/sooheelee/notebooks/\"\n",
-    "repo_dir = \"hubmap-hackathon-2024\"\n",
-    "\n",
-    "# Files of interest are in hubmap-hackathon-2024/shlee-hh-lightweight-thymus/\n",
-    "# This will error if the folder already exists\n",
-    "Repo.clone_from(git_url, repo_dir)\n",
-    "\n",
-    "repofilepath = f\"{repo_dir}/{repo_dir}/shlee-hh-lightweight-thymus/\""
    ]
   },
   {
