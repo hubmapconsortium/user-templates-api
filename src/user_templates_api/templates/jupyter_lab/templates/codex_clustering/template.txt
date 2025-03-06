@@ -13,8 +13,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce==3.2.6 starlette uvicorn widgetsnbextension\n"
+    "!pip install numpy pandas requests wheel matplotlib matplotlib-inline scikit-learn vitessce==3.2.6 starlette uvicorn widgetsnbextension\n"
    ]
   },
   {
