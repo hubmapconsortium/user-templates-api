@@ -10,7 +10,7 @@
   "examples": [
     {
       "title": "CODEX in Vitessce",
-      "description": "Visualization of a codex dataset of the small intestine with spatial view, t-sne, antigen list, and different cell sets.",
+      "description": "Visualization of a CODEX dataset of the small intestine with spatial view, t-sne, antigen list, and different cell sets.",
       "datasets": ["69c70762689b20308bb049ac49653342"]
     },
     {
