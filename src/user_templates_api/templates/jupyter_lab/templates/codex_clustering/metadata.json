@@ -8,6 +8,13 @@
     ], 
     "is_multi_dataset_template": true,
     "template_format": "jinja",
+    "examples": [
+        {
+          "title": "Cluster cells of large intestine",
+          "description": "Examine a CODEX dataset, create a new clustering in the anndata object and load this into Vitessce.",
+          "datasets": ["35d53aa621e25665b1d239f1d89befb2"]
+        }
+      ],
     "is_hidden": false,
-    "last_modified_unix_timestamp": 1723749414
+    "last_modified_unix_timestamp": 1741293007
   }
