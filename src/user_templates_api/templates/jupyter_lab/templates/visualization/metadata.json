@@ -9,11 +9,6 @@
   "template_format": "python",
   "examples": [
     {
-      "title": "CODEX in Vitessce",
-      "description": "Visualization of a CODEX dataset of the small intestine with spatial view, t-sne, antigen list, and different cell sets.",
-      "datasets": ["69c70762689b20308bb049ac49653342"]
-    },
-    {
       "title": "Slide-seq in Vitessce",
       "description": "Visualization of a slide-seq dataset of the kidney with spatial view, UMAP, gene list, different annotations, and expression by cell set.",
       "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
