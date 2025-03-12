@@ -6,7 +6,7 @@
     "visualization"
   ],
   "is_multi_dataset_template": true,
-  "template_format": "python",
+  "template_format": "jinja",
   "examples": [
     {
       "title": "Slide-seq in Vitessce",
