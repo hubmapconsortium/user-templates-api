@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 
 from django.template import engines
-# from nbformat.v4 import new_code_cell, new_markdown_cell
 
-import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
+# from nbformat.v4 import new_code_cell, new_markdown_cell
+# import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
 
 
 class JupyterLabRender:
