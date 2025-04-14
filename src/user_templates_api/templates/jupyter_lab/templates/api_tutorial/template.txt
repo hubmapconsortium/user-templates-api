@@ -1,165 +1,148 @@
-{
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "id": "8d21a477",
-      "metadata": {},
-      "source": [
-        "This notebook demonstrates how to work with HuBMAP APIs for datasets:"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "07052a83",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "!pip install requests pandas"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "045dfedd",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "from csv import DictReader, excel_tab\n",
-        "from io import StringIO\n",
-        "import requests\n",
-        "import pandas as pd\n",
-        "\n",
-        "# These are the UUIDS of the search results when this notebook was created:\n",
-        "\n",
-        "uuids = ['227a25ceed1eb22ffb5fb5716b8d9d43']"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "id": "009016fe",
-      "metadata": {},
-      "source": [
-        "## Metadata"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "c6d7f55f",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# Fetch the metadata, and read it into a list of dicts:\n",
-        "\n",
-        "response = requests.post(\n",
-        "    \"https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv\", json={\"uuids\": uuids}\n",
-        ")\n",
-        "metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "cb48d226",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# The number of metadata dicts will correspond to the number of UUIDs requested:\n",
-        "\n",
-        "len(metadata)"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "6867ce04",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# Load it into a DataFrame and see the field definitions:\n",
-        "\n",
-        "pd.DataFrame(metadata[:1]).T.head()"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "3ec46f33",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# Or review the data itself:\n",
-        "\n",
-        "pd.DataFrame(metadata[1:]).head()"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "id": "813d99b7",
-      "metadata": {},
-      "source": [
-        "## Files"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "02e98abc",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# The Search API can give us information about the files in processed datasets:\n",
-        "\n",
-        "search_api = \"https://search.api.hubmapconsortium.org/v3/portal/search\""
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "fbf339a5",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# The Search API supports Elasticsearch queries:\n",
-        "\n",
-        "import json\n",
-        "\n",
-        "hits = json.loads(\n",
-        "    requests.post(\n",
-        "        search_api,\n",
-        "        json={\n",
-        "            \"size\": 10000,  # To make sure the list is not truncted, set this high.\n",
-        "            \"query\": {\"ids\": {\"values\": uuids}},\n",
-        "            \"_source\": [\"files\"],\n",
-        "        },  # Documents are large, so only request the fields we need.\n",
-        "    ).text\n",
-        ")[\"hits\"][\"hits\"]"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "id": "3265aa48",
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# Only processed datasets have file information.\n",
-        "\n",
-        "files = {\n",
-        "    hit[\"_id\"]: {\n",
-        "        file[\"rel_path\"]: file[\"description\"]\n",
-        "        for file in hit[\"_source\"].get(\"files\", [])\n",
-        "        if file\n",
-        "    }\n",
-        "    for hit in hits\n",
-        "}\n",
-        "\n",
-        "pd.DataFrame(files).head()"
-      ]
-    }
-  ],
-  "metadata": {},
-  "nbformat": 4,
-  "nbformat_minor": 5
-}
+[
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This notebook demonstrates how to work with HuBMAP APIs for datasets:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!pip install requests pandas"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from csv import DictReader, excel_tab\n",
+    "from io import StringIO\n",
+    "import requests\n",
+    "import pandas as pd\n",
+    "\n",
+    "# These are the UUIDS of the search results when this notebook was created:\n",
+    "\n",
+    "uuids = {{ uuids | safe }}"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Metadata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Fetch the metadata, and read it into a list of dicts:\n",
+    "\n",
+    "response = requests.post(\n",
+    "    \"https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv\", json={\"uuids\": uuids}\n",
+    ")\n",
+    "metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The number of metadata dicts will correspond to the number of UUIDs requested:\n",
+    "\n",
+    "len(metadata)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Load it into a DataFrame and see the field definitions:\n",
+    "\n",
+    "pd.DataFrame(metadata[:1]).T.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Or review the data itself:\n",
+    "\n",
+    "pd.DataFrame(metadata[1:]).head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Files"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The Search API can give us information about the files in processed datasets:\n",
+    "\n",
+    "search_api = \"https://search.api.hubmapconsortium.org/v3/portal/search\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The Search API supports Elasticsearch queries:\n",
+    "\n",
+    "import json\n",
+    "\n",
+    "hits = json.loads(\n",
+    "    requests.post(\n",
+    "        search_api,\n",
+    "        json={\n",
+    "            \"size\": 10000,  # To make sure the list is not truncted, set this high.\n",
+    "            \"query\": {\"ids\": {\"values\": uuids}},\n",
+    "            \"_source\": [\"files\"],\n",
+    "        },  # Documents are large, so only request the fields we need.\n",
+    "    ).text\n",
+    ")[\"hits\"][\"hits\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Only processed datasets have file information.\n",
+    "\n",
+    "files = {\n",
+    "    hit[\"_id\"]: {\n",
+    "        file[\"rel_path\"]: file[\"description\"]\n",
+    "        for file in hit[\"_source\"].get(\"files\", [])\n",
+    "        if file\n",
+    "    }\n",
+    "    for hit in hits\n",
+    "}\n",
+    "\n",
+    "pd.DataFrame(files).head()"
+   ]
+  }
+]

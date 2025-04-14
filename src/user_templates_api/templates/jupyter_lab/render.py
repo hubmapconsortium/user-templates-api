@@ -3,10 +3,9 @@ import json
 from pathlib import Path
 
 from django.template import engines
-from nbformat.v4 import new_code_cell, new_markdown_cell
 
-import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
-from user_templates_api.utils.client import get_client
+# from nbformat.v4 import new_code_cell, new_markdown_cell
+# import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
 
 
 class JupyterLabRender:
@@ -32,53 +31,50 @@ class JupyterLabRender:
     def python_generate_template_data(self, data):
         return []
 
-    def json_generate_template_data(self, data):
-        django_engine = engines["django"]
+    # TODO: see if this can be used without get_client
+    # def json_generate_template_data(self, data):
+    #     django_engine = engines["django"]
 
-        uuids = data["uuids"]
-        group_token = data["group_token"]
+    #     uuids = data["uuids"]
+    #     group_token = data["group_token"]
 
-        util_client = get_client(group_token)
+    #     util_client = get_client(group_token)
 
-        template_json = data.get("template")
-        if template_json is None:
-            class_file_path = inspect.getfile(self.__class__)
-            # Convert the string to a pathlib Path
-            class_file_path = Path(class_file_path)
-            # Grab the parent path and append template.json
-            template_file_path = class_file_path.parent / "template.json"
-            # Load that filepath since it should be the json template
-            template_json = json.load(open(template_file_path))
+    #     template_json = data.get("template")
+    #     if template_json is None:
+    #         class_file_path = inspect.getfile(self.__class__)
+    #         # Convert the string to a pathlib Path
+    #         class_file_path = Path(class_file_path)
+    #         # Grab the parent path and append template.json
+    #         template_file_path = class_file_path.parent / "template.json"
+    #         # Load that filepath since it should be the json template
+    #         template_json = json.load(open(template_file_path))
 
-        cells = []
-        for template_item in template_json:
-            cell_type = template_item["cell_type"]
-            src = template_item["src"]
-            if cell_type == "template_cell":
-                if src == "get_metadata_cells":
-                    cells += jl_utils.get_metadata_cells(uuids, util_client)
-                elif src == "get_file_cells":
-                    cells += jl_utils.get_file_cells(uuids, util_client)
-                elif src == "get_anndata_cells":
-                    cells += jl_utils.get_anndata_cells(uuids, util_client)
-            elif cell_type == "code_cell":
-                template = django_engine.from_string(src)
-                # Need to do something w/ the source to make sure that it has its vars replaced
-                # Have to use append here since the nbformat cell object has an add/iadd function that is really a merge
-                cells.append(new_code_cell(template.render(data)))
-            elif cell_type == "markdown_cell":
-                template = django_engine.from_string(src)
-                # Need to do something w/ the source to make sure that it has its vars replaced
-                cells.append(new_markdown_cell(template.render(data)))
+    #     cells = []
+    #     for template_item in template_json:
+    #         cell_type = template_item["cell_type"]
+    #         src = template_item["src"]
+    #         if cell_type == "template_cell":
+    #             if src == "get_metadata_cells":
+    #                 cells += jl_utils.get_metadata_cells(uuids, util_client)
+    #             elif src == "get_file_cells":
+    #                 cells += jl_utils.get_file_cells(uuids, util_client)
+    #             elif src == "get_anndata_cells":
+    #                 cells += jl_utils.get_anndata_cells(uuids, util_client)
+    #         elif cell_type == "code_cell":
+    #             template = django_engine.from_string(src)
+    #             # Need to do something w/ the source to make sure that it has its vars replaced
+    #             # Have to use append here since the nbformat cell object has an add/iadd function that is really a merge
+    #             cells.append(new_code_cell(template.render(data)))
+    #         elif cell_type == "markdown_cell":
+    #             template = django_engine.from_string(src)
+    #             # Need to do something w/ the source to make sure that it has its vars replaced
+    #             cells.append(new_markdown_cell(template.render(data)))
 
-        return cells
+    #     return cells
 
     def jinja_generate_template_data(self, data):
         django_engine = engines["django"]
-
-        group_token = data["group_token"]
-
-        data["util_client"] = get_client(group_token)
 
         # Get the file path first
         class_file_path = inspect.getfile(self.__class__)
