@@ -47,7 +47,7 @@
     "# Fetch the metadata, and read it into a list of dicts:\n",
     "\n",
     "response = requests.post(\n",
-    "    \"https://portal.hubmapconsortium.org/metadata/v0/dataset.tsv\", json={\"uuids\": uuids}\n",
+    "    \"https://portal.hubmapconsortium.org/metadata/v0/datasets.tsv\", json={\"uuids\": uuids}\n",
     ")\n",
     "metadata = list(DictReader(StringIO(response.text), dialect=excel_tab))"
    ]
