@@ -1,4 +1,5 @@
 import sys
+import json
 
 
 def getTemplatePath():
@@ -64,40 +65,31 @@ def notebookToTxt(file_folder):
     file_name_ipynb = f"{template_path}/{file_folder}/template.ipynb"
     file_name_txt = f"{file_name_ipynb.split('.ipynb')[0]}.txt"
 
-    # read ipynb
-    text_ipynb = []
+    # read ipynb as json
     with open(file_name_ipynb, "r") as file:
-        text_ipynb = file.read()
-
-    # extract everything between the cells list
-    # this is everything between the first bracket and its closing bracket
-    opened = 0
-    closed = 0
-    text_txt_chars = ""
-    for char in text_ipynb:
-        if char == "[":
-            opened += 1
-        if opened > 0:
-            if opened != closed:
-                text_txt_chars += char
-        if char == "]":
-            closed += 1
-
-    # add back newline characters
-    text_txt_list = [f"{line}\n" for line in text_txt_chars.split("\n")]
+        text_ipynb = json.loads(file.read())
 
     # replace execution count with null and outputs with empty
-    for i in range(len(text_txt_list)):
-        if '"execution_count":' in text_txt_list[i]:
-            text_txt_list[i] = '   "execution_count": null,\n'
-        if '"outputs":' in text_txt_list[i]:
-            text_txt_list[i] = '   "outputs": [],\n'
-        if '"id":' in text_txt_list[i]:
-            text_txt_list[i] = ""
+    text_ipynb = text_ipynb["cells"]
+    for cell in text_ipynb:
+        if cell["cell_type"] == "code":
+            cell["execution_count"] = None
+            cell["metadata"] = {}
+            cell["outputs"] = []
+
+    # write as txt
+    # add spacing as in .ipynb
+    text_ipynb_str = json.dumps(text_ipynb, indent=1)
+    text_ipynb_str_list = text_ipynb_str.split("\n")
+    for i, l in enumerate(text_ipynb_str_list):
+        if i != 0 and i != len(text_ipynb_str_list) - 1:
+            text_ipynb_str_list[i] = f" {l}"
+    text_ipynb_combined = "\n".join(text_ipynb_str_list)
+    print(text_ipynb_combined)
 
     # write to txt
     with open(file_name_txt, "w") as file:
-        file.writelines(text_txt_list)
+        file.write(text_ipynb_combined)
 
 
 try:
