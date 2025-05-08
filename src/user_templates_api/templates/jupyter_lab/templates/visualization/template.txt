@@ -21,7 +21,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "!pip install https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.4.1.zip\n",
+    "!pip install https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.4.5.zip\n",
     "!pip install vitessce anywidget uvicorn starlette"
    ]
   },
