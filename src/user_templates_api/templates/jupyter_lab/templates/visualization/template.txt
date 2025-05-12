@@ -12,7 +12,7 @@
    "metadata": {},
    "source": [
     "For this template, symlinking is not required, as the data is fetched from the remote repository.\n",
-    "This template only visualizes one dataset, it will automatically select the first of the datasets.\""
+    "This template only visualizes one dataset, it will automatically select the first of the datasets."
    ]
   },
   {
@@ -21,7 +21,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "!pip install https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.4.5.zip\n",
+    "!pip install https://github.com/hubmapconsortium/portal-visualization/archive/refs/tags/0.4.6.zip\n",
     "!pip install vitessce anywidget uvicorn starlette"
    ]
   },
