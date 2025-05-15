@@ -30,7 +30,16 @@ For the jinja format, the render.py as in this folder is sufficient.
 
 
 ## template.txt
-The actual template. This can be directly converted from .ipynb to .txt, or use the script [here](https://github.com/hubmapconsortium/user-templates-api/blob/development/src/user_templates_api/templates/jupyter_lab/utils/convert-templates/README.md) If insertion of values is required, e.g. uuids, you can add them as follows: 
+The actual template. This can be directly converted from .ipynb to .txt, or use the script [here](https://github.com/hubmapconsortium/user-templates-api/blob/development/src/user_templates_api/templates/jupyter_lab/utils/convert-templates/README.md).
+
+This script is run as follows for e.g. the blank example. `tonb` converts .txt to .ipynb, `totxt` converst .ipynb to .txt.
+
+```sh
+python src/user_templates_api/templates/jupyter_lab/utils/convert-templates/convert-notebook.py tonb blank
+python src/user_templates_api/templates/jupyter_lab/utils/convert-templates/convert-notebook.py totxt blank
+```
+
+If insertion of values is required, e.g. uuids, you can add them as follows: 
 ```sh
 uuids = {{ uuids | safe }}
 ```
