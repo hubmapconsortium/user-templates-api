@@ -40,9 +40,7 @@
    },
    "outputs": [],
    "source": [
-    "!pip install anndata pandas scipy matplotlib mlxtend==0.23.1 seaborn scikit-learn numpy==1.24.4 zarr tqdm statsmodels vitessce esbuild_py uvicorn starlette\n",
-    "!pip install -i https://test.pypi.org/simple/ SpatialQuery\n",
-    "!pip install hubmap-template-helper"
+    "!pip install SpatialQuery zarr tqdm vitessce esbuild_py uvicorn starlette oxc_py anywidget hubmap-template-helper"
    ]
   },
   {

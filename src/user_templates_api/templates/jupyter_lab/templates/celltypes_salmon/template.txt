@@ -14,8 +14,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# !pip install --upgrade pip\n",
-    "# !pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn anndata hubmap-template-helper"
+    "!pip install --upgrade pip\n",
+    "!pip install numpy pandas requests wheel matplotlib matplotlib-inline altair seaborn anndata hubmap-template-helper"
    ]
   },
   {

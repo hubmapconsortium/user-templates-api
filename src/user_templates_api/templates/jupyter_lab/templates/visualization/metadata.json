@@ -1,12 +1,24 @@
 {
-  "title": "JupyterLab Vitessce Visualization",
+  "title": "Vitessce Visualization",
   "description": "This notebook allows the user to visualize a specific dataset using the vitessce framework.",
   "tags": [
     "vitessce",
     "visualization"
   ],
   "is_multi_dataset_template": true,
-  "template_format": "python",
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "Slide-seq in Vitessce",
+      "description": "Visualization of a slide-seq dataset of the kidney with spatial view, UMAP, gene list, different annotations, and expression by cell set.",
+      "datasets": ["a1d17fdd270a69c813b872a927dfa5f3"]
+    },
+    {
+      "title": "CODEX in Vitessce",
+      "description": "Visualization of a CODEX dataset of the small intestine with spatial view, t-sne, antigen list, and different cell sets.",
+      "datasets": ["69c70762689b20308bb049ac49653342"]
+    }
+  ],
   "is_hidden": false,
-  "last_modified_unix_timestamp": 1723749414
+  "last_modified_unix_timestamp": 1741880837
 }
