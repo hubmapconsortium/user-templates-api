@@ -1,7 +1,7 @@
 import os
 import json
 
-from convert_notebook import notebookToTxt, txtToNotebook
+from convert_notebook import notebook_to_text, text_to_notebook
 
 templates_folder = "src/user_templates_api/templates/jupyter_lab/templates"
 
@@ -20,5 +20,6 @@ for template in templates:
 
 for template in templates_jinja:
     print(template)
-    txtToNotebook(template)
-    notebookToTxt(template)
+    text_to_notebook(template)
+    notebook_to_text(template)
+

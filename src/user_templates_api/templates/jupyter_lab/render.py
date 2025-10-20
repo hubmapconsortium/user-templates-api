@@ -4,6 +4,8 @@ from pathlib import Path
 
 from django.template import engines
 
+from user_templates_api.templates.jupyter_lab.utils.convert_templates.convert_notebook import conversion
+
 # from nbformat.v4 import new_code_cell, new_markdown_cell
 # import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
 
@@ -81,10 +83,10 @@ class JupyterLabRender:
         # Convert the string to a pathlib Path
         class_file_path = Path(class_file_path)
         # Grab the parent path and append template.txt
-        template_file_path = class_file_path.parent / "template.txt"
+        template_file_path = class_file_path.parent / "template.ipynb"
         # Load that filepath since it should be the json template
         template_file = open(template_file_path)
-        template = django_engine.from_string(template_file.read())
+        template = django_engine.from_string(conversion(template_file.read()))
         rendered_template = template.render(data).strip()
         rendered_template = json.loads(rendered_template) if rendered_template else {}
 
