@@ -12,5 +12,5 @@ There are two parameters that need to be supplied:
 Run it as follows: 
 
 ```sh
-python3 src/user_templates_api/templates/jupyter_lab/utils/convert-templates/convert-notebook.py OPTION FOLDER
+python3 src/user_templates_api/templates/jupyter_lab/utils/convert-templates/convert_notebook.py OPTION FOLDER
 ```
