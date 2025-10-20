@@ -31,7 +31,7 @@ For the jinja format, the render.py as in this folder is sufficient.
 
 
 ## template.ipynb
-The actual template. If you are working with an older template and want to convert this to a notebook again, you can use the script [here](https://github.com/hubmapconsortium/user-templates-api/blob/development/src/user_templates_api/templates/jupyter_lab/utils/convert-templates/README.md) 
+The actual template. 
 
 If insertion of values is required, e.g. uuids, you can add them as follows: 
 ```sh
@@ -39,6 +39,15 @@ uuids = {{ uuids | safe }}
 ```
 An example can be found in the blank template.
 
+
+If you are working with an older template and want to convert this to a notebook again, you can use the script [here](https://github.com/hubmapconsortium/user-templates-api/blob/development/src/user_templates_api/templates/jupyter_lab/utils/convert_templates/README.md).
+
+This script is run as follows for e.g. the blank example. `tonb` converts .txt to .ipynb, `totxt` converst .ipynb to .txt.
+
+```sh
+python src/user_templates_api/templates/jupyter_lab/utils/convert_templates/convert_notebook.py tonb blank
+python src/user_templates_api/templates/jupyter_lab/utils/convert_templates/convert_notebook.py totxt blank
+```
 
 ## Helper package
 A few functions that help with creating templates, such as a template compatibility checker, are included in a small helper package. Install it as such:
