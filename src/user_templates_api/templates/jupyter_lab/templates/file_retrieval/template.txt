@@ -1,202 +1,202 @@
 [
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "# Retrieve files with the search and assets API\n",
-    "This template shows how to find existing files with the search API and retrieve these files from the assets API.\n",
-    "This can be useful if the data is not symlinked or UUIDs are added to the list later."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "# Retrieve files with the search and assets API\n",
+      "This template shows how to find existing files with the search API and retrieve these files from the assets API.\n",
+      "This can be useful if the data is not symlinked or UUIDs are added to the list later."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import json\n",
-    "import os\n",
-    "import requests\n",
-    "import warnings"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "import json\n",
+      "import os\n",
+      "import requests\n",
+      "import warnings"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "## Linked datasets"
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "## Linked datasets"
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "uuids = {{ uuids | safe }}"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "uuids = {{ uuids | safe }}"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "## Retrieve files"
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "## Retrieve files"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "This function allows for retrieval of files from the assets API, to be saved locally."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "This function allows for retrieval of files from the assets API, to be saved locally."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "def retrieve_files_remote(uuid, file_name, outdir='.'): \n",
-    "    '''\n",
-    "    For a given UUID and file name, retrieve this file and save it locally.\n",
-    "\n",
-    "    Parameters\n",
-    "    ----------\n",
-    "    uuid : str\n",
-    "        UUID of dataset\n",
-    "    file_name : str\n",
-    "        relative location of desired file. \n",
-    "    outdir : str, optional\n",
-    "        name of output folder. Default: '.'\n",
-    "    '''\n",
-    "    url = 'https://assets.hubmapconsortium.org/' + uuid + '/' + file_name\n",
-    "\n",
-    "    extension = str.split(file_name, sep='.')[-1]\n",
-    "\n",
-    "    # check if relative file_name has multiple subfolders\n",
-    "    # if so, extract the folder structure without the filename as a string\n",
-    "    folder_structure = str.split(file_name, sep='/')[0:-1]\n",
-    "    folder_structure_addition = '/' + '/'.join(folder_structure) + '/' if len(folder_structure) > 0 else ''\n",
-    "\n",
-    "    if extension == 'h5ad':\n",
-    "        warnings.warn('Large files such as .h5ad files may take long to retrieve.')\n",
-    "    \n",
-    "    res = requests.get(url)\n",
-    "\n",
-    "    if not os.path.exists(outdir + '/' + uuid + folder_structure_addition):\n",
-    "        os.makedirs(outdir + '/' + uuid + folder_structure_addition, exist_ok = True) # unlike os.mkdir, os.makedirs creates directories recursively\n",
-    "\n",
-    "    with open(outdir + '/' + uuid + '/' + file_name, mode='wb') as f:     \n",
-    "        f.write(res.content)\n",
-    "        "
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "def retrieve_files_remote(uuid, file_name, outdir='.'): \n",
+      "    '''\n",
+      "    For a given UUID and file name, retrieve this file and save it locally.\n",
+      "\n",
+      "    Parameters\n",
+      "    ----------\n",
+      "    uuid : str\n",
+      "        UUID of dataset\n",
+      "    file_name : str\n",
+      "        relative location of desired file. \n",
+      "    outdir : str, optional\n",
+      "        name of output folder. Default: '.'\n",
+      "    '''\n",
+      "    url = 'https://assets.hubmapconsortium.org/' + uuid + '/' + file_name\n",
+      "\n",
+      "    extension = str.split(file_name, sep='.')[-1]\n",
+      "\n",
+      "    # check if relative file_name has multiple subfolders\n",
+      "    # if so, extract the folder structure without the filename as a string\n",
+      "    folder_structure = str.split(file_name, sep='/')[0:-1]\n",
+      "    folder_structure_addition = '/' + '/'.join(folder_structure) + '/' if len(folder_structure) > 0 else ''\n",
+      "\n",
+      "    if extension == 'h5ad':\n",
+      "        warnings.warn('Large files such as .h5ad files may take long to retrieve.')\n",
+      "    \n",
+      "    res = requests.get(url)\n",
+      "\n",
+      "    if not os.path.exists(outdir + '/' + uuid + folder_structure_addition):\n",
+      "        os.makedirs(outdir + '/' + uuid + folder_structure_addition, exist_ok = True) # unlike os.mkdir, os.makedirs creates directories recursively\n",
+      "\n",
+      "    with open(outdir + '/' + uuid + '/' + file_name, mode='wb') as f:     \n",
+      "        f.write(res.content)\n",
+      "        "
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "Before we can use this, we need to know what files a dataset has. We can see a listing of processing output files on the [HuBMAP Data Portal website](https://portal.hubmapconsortium.org) or retrieve this directly through the search API, as shown below."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "Before we can use this, we need to know what files a dataset has. We can see a listing of processing output files on the [HuBMAP Data Portal website](https://portal.hubmapconsortium.org) or retrieve this directly through the search API, as shown below."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "def get_files_for_uuids(uuids, search_api='https://search.api.hubmapconsortium.org/v3/portal/search'):\n",
-    "    '''\n",
-    "    Create a dictionary of files per dataset.\n",
-    "\n",
-    "    Parameters\n",
-    "    ----------\n",
-    "    uuid : array of str or str\n",
-    "        UUID(s) of dataset(s)\n",
-    "    search_api : str, optional\n",
-    "        URL of search_api. Default: 'https://search.api.hubmapconsortium.org/v3/portal/search'\n",
-    "    '''\n",
-    "    hits = json.loads(\n",
-    "        requests.post(\n",
-    "            search_api,\n",
-    "            json={\n",
-    "                \"size\": 10000,\n",
-    "                \"query\": {\"ids\": {\"values\": uuids}},\n",
-    "                \"_source\": [\"files\"]\n",
-    "            }, \n",
-    "        ).text\n",
-    "    )[\"hits\"][\"hits\"]\n",
-    "\n",
-    "    uuid_to_files = {}\n",
-    "    for hit in hits:\n",
-    "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
-    "        uuid_to_files[hit['_id']] = file_paths\n",
-    "\n",
-    "    return uuid_to_files"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "def get_files_for_uuids(uuids, search_api='https://search.api.hubmapconsortium.org/v3/portal/search'):\n",
+      "    '''\n",
+      "    Create a dictionary of files per dataset.\n",
+      "\n",
+      "    Parameters\n",
+      "    ----------\n",
+      "    uuid : array of str or str\n",
+      "        UUID(s) of dataset(s)\n",
+      "    search_api : str, optional\n",
+      "        URL of search_api. Default: 'https://search.api.hubmapconsortium.org/v3/portal/search'\n",
+      "    '''\n",
+      "    hits = json.loads(\n",
+      "        requests.post(\n",
+      "            search_api,\n",
+      "            json={\n",
+      "                \"size\": 10000,\n",
+      "                \"query\": {\"ids\": {\"values\": uuids}},\n",
+      "                \"_source\": [\"files\"]\n",
+      "            }, \n",
+      "        ).text\n",
+      "    )[\"hits\"][\"hits\"]\n",
+      "\n",
+      "    uuid_to_files = {}\n",
+      "    for hit in hits:\n",
+      "        file_paths = [file['rel_path'] for file in hit['_source']['files']]\n",
+      "        uuid_to_files[hit['_id']] = file_paths\n",
+      "\n",
+      "    return uuid_to_files"
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "uuid_to_files = get_files_for_uuids(uuids)\n",
-    "uuid_to_files"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "uuid_to_files = get_files_for_uuids(uuids)\n",
+      "uuid_to_files"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "We can now retrieve one of these files."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "We can now retrieve one of these files."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "retrieve_files_remote(uuids[0], uuid_to_files[uuids[0]][0], outdir='data')"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "retrieve_files_remote(uuids[0], uuid_to_files[uuids[0]][0], outdir='data')"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "The file is now locally saved under the data/_<uuid>_ folder.\n",
-    "Note that in the HuBMAP Workspaces, the 'datasets' folder is read only.\n",
-    "\n",
-    "We could also use this to save all files of a dataset locally. However, this takes quite some time."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "The file is now locally saved under the data/_<uuid>_ folder.\n",
+      "Note that in the HuBMAP Workspaces, the 'datasets' folder is read only.\n",
+      "\n",
+      "We could also use this to save all files of a dataset locally. However, this takes quite some time."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Run to download all files from this dataset.\n",
-    "# for file in uuid_to_files[uuids[0]]: \n",
-    "#     retrieve_files_remote(uuids[0], file, outdir='data')"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "# Run to download all files from this dataset.\n",
+      "# for file in uuid_to_files[uuids[0]]: \n",
+      "#     retrieve_files_remote(uuids[0], file, outdir='data')"
+    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "Metadata for published processed datasets is also available in json format and can be retrieved as shown."
-   ]
+    "cell_type": "markdown",
+    "metadata": {},
+    "source": [
+      "Metadata for published processed datasets is also available in json format and can be retrieved as shown."
+    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Run to download metadata.json files from linked datasets.\n",
-    "# for dataset in uuids: \n",
-    "#     retrieve_files_remote(dataset, 'metadata.json', outdir='data')"
-   ]
+    "cell_type": "code",
+    "execution_count": null,
+    "metadata": {},
+    "outputs": [],
+    "source": [
+      "# Run to download metadata.json files from linked datasets.\n",
+      "# for dataset in uuids: \n",
+      "#     retrieve_files_remote(dataset, 'metadata.json', outdir='data')"
+    ]
   }
 ]
