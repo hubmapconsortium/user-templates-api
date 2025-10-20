@@ -1,3 +1,4 @@
+import json
 import sys
 
 
@@ -65,39 +66,24 @@ def notebookToTxt(file_folder):
     file_name_txt = f"{file_name_ipynb.split('.ipynb')[0]}.txt"
 
     # read ipynb
-    text_ipynb = []
     with open(file_name_ipynb, "r") as file:
-        text_ipynb = file.read()
+        js = json.load(file)
+   
+    cells = js.get("cells", [])
 
-    # extract everything between the cells list
-    # this is everything between the first bracket and its closing bracket
-    opened = 0
-    closed = 0
-    text_txt_chars = ""
-    for char in text_ipynb:
-        if char == "[":
-            opened += 1
-        if opened > 0:
-            if opened != closed:
-                text_txt_chars += char
-        if char == "]":
-            closed += 1
-
-    # add back newline characters
-    text_txt_list = [f"{line}\n" for line in text_txt_chars.split("\n")]
-
-    # replace execution count with null and outputs with empty
-    for i in range(len(text_txt_list)):
-        if '"execution_count":' in text_txt_list[i]:
-            text_txt_list[i] = '   "execution_count": null,\n'
-        if '"outputs":' in text_txt_list[i]:
-            text_txt_list[i] = '   "outputs": [],\n'
-        if '"id":' in text_txt_list[i]:
-            text_txt_list[i] = ""
-
-    # write to txt
+    # remove metadata, execution_count, outputs, id
+    for cell in cells: 
+        if "metadata" in cell.keys():
+            cell["metadata"] = {}
+        if "execution_count" in cell.keys():
+            cell["execution_count"] = None
+        if "outputs" in cell.keys():
+            cell["outputs"] = []
+        if "id" in cell.keys():
+            cell.pop("id")
+    
     with open(file_name_txt, "w") as file:
-        file.writelines(text_txt_list)
+        json.dump(cells, file, indent=2)
 
 
 try:
