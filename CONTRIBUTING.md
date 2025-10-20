@@ -16,10 +16,13 @@ We use a Docker container. Please see [the docker documentation](https://hub.doc
 
 
 ## Linting
-We use Flake8 and Black for linting Python code. If you have installed the packages in requirements-dev.txt, you can simply run the following:
+We use Flake8, Black and isort for linting Python code. If you have installed the packages in requirements-dev.txt, you can simply run the following:
 ```sh
 flake8 path-to-file
 ```
 ```sh
 black path-to-file
+```
+```sh
+isort path-to-file
 ```
