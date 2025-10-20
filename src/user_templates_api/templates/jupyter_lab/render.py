@@ -4,7 +4,9 @@ from pathlib import Path
 
 from django.template import engines
 
-from user_templates_api.templates.jupyter_lab.utils.convert_templates.convert_notebook import conversion
+from user_templates_api.templates.jupyter_lab.utils.convert_templates.convert_notebook import (
+    conversion,
+)
 
 # from nbformat.v4 import new_code_cell, new_markdown_cell
 # import user_templates_api.templates.jupyter_lab.utils.utils as jl_utils
@@ -17,13 +19,12 @@ class JupyterLabRender:
 
         if metadata["template_format"] != "jinja":
             return
-        
+
         cells = self.jinja_generate_template_data(data)
 
         nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
 
         return json.dumps(nb)
-    
 
     def jinja_generate_template_data(self, data):
         django_engine = engines["django"]

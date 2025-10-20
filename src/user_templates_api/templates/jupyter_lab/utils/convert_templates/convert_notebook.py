@@ -56,7 +56,7 @@ def convert_json(js):
     cells = js.get("cells", [])
 
     # remove metadata, execution_count, outputs, id
-    for cell in cells: 
+    for cell in cells:
         if "metadata" in cell.keys():
             cell["metadata"] = {}
         if "execution_count" in cell.keys():
@@ -65,9 +65,9 @@ def convert_json(js):
             cell["outputs"] = []
         if "id" in cell.keys():
             cell.pop("id")
-    
+
     return json.dumps(cells, indent=2)
-    
+
 
 def convert_text(text):
     text_ipynb = text
@@ -89,7 +89,6 @@ def convert_text(text):
     # add back newline characters
     text_txt_list = text_txt_chars.split("\n")
     text_txt_list = [line + "\n" for line in text_txt_list[:-1]] + [text_txt_list[-1]]
-
 
     # replace execution count with null and outputs with empty
     for i in range(len(text_txt_list)):
@@ -119,12 +118,12 @@ def conversion(text):
     str
         text that is structured as a txt of the cells of the notebook
     """
-    try: 
+    try:
         js = json.loads(text)
         conv = convert_json(js)
-    except:
+    except json.JSONDecodeError:
         conv = convert_text(text)
-    
+
     return conv
 
 
@@ -143,14 +142,14 @@ def notebook_to_text(file_folder):
 
     with open(file_name_ipynb) as file:
         text = file.read()
-    
+
     conv = conversion(text)
 
     with open(file_name_txt, "w") as file:
         file.write(conv)
 
 
-def main(): 
+def main():
     try:
         option = sys.argv[1]
         file_folder = sys.argv[2]
@@ -166,7 +165,9 @@ def main():
         )
 
     except FileNotFoundError:
-        raise Warning("Did you supply a valid template folder? Otherwise check the path")
+        raise Warning(
+            "Did you supply a valid template folder? Otherwise check the path"
+        )
 
 
 if __name__ == "__main__":

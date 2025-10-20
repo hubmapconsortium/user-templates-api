@@ -14,12 +14,14 @@ for template in templates:
         continue
     with open(f"{templates_folder}/{template}/metadata.json", "r") as file:
         metadata = json.load(file)
-        if metadata.get("template_format", "") == "jinja" and metadata.get("is_hidden", "") == False:
+        if (
+            metadata.get("template_format", "") == "jinja"
+            and metadata.get("is_hidden", "") is False
+        ):
             templates_jinja.append(template)
-   
+
 
 for template in templates_jinja:
     print(template)
     text_to_notebook(template)
     notebook_to_text(template)
-
