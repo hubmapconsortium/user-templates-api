@@ -1,6 +1,6 @@
 {
   "title": "Scalable Cell Population Explorer",
-  "description": "This notebook shows how to load the scalable cell population viewer CellPop. It loads in datasets with annotated cell types and shows these in an interactive visualization.",
+  "description": "This notebook shows how to load the scalable cell population viewer scellop. It loads in datasets with annotated cell types and shows these in an interactive visualization.",
   "tags": [
     "visualization"
   ], 
@@ -14,5 +14,5 @@
     }
   ],
   "is_hidden": false,
-  "last_modified_unix_timestamp": 1729805397
+  "last_modified_unix_timestamp": 1767696252
 }
