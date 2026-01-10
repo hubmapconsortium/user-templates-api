@@ -1,0 +1,1895 @@
+[
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# [🍩] Lightweight thymus feature analysis using CODEX [CytoKit+SPRM]\n",
+    "This notebook explores data and identifies a tissue with large structures. It parameterizes cellpose to segment structures across four CODEX sample images and compare signal from the mask versus cells within the mask. Finally, it compares to thymus data sets from 2D Imaging Mass Cytometry (HuBMAP) and CZI single-cell RNA-Seq data (external). \n",
+    "\n",
+    "> This notebook is highly specific for the example datasets, and will likely not directly work with other datasets!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [0.1] Python packages"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# !pip install cellpose squidpy gitpython"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import anndata as ad\n",
+    "import ast\n",
+    "import cellpose\n",
+    "import cv2\n",
+    "import geopandas as gpd\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import scanpy as sc\n",
+    "import scipy\n",
+    "import seaborn as sns\n",
+    "import skimage as ski\n",
+    "import squidpy as sq\n",
+    "import tifffile\n",
+    "import warnings\n",
+    "import zarr\n",
+    "\n",
+    "from cellpose import core, utils, io, models, metrics, plot\n",
+    "from collections import Counter\n",
+    "from git import Repo\n",
+    "from matplotlib import pyplot as plt\n",
+    "from shapely.geometry import Polygon\n",
+    "from tqdm import tqdm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Copy cleaned up files from shlee's github repo\n",
+    "git_url = \"https://github.com/sooheelee/notebooks/\"\n",
+    "repo_dir = \"hubmap-hackathon-2024\"\n",
+    "\n",
+    "# Files of interest are in hubmap-hackathon-2024/shlee-hh-lightweight-thymus/\n",
+    "# This will error if the folder already exists\n",
+    "Repo.clone_from(git_url, repo_dir)\n",
+    "\n",
+    "repofilepath = f\"{repo_dir}/{repo_dir}/shlee-hh-lightweight-thymus/\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [0.2] Context and data sets"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Data used in the analysis are as follows.\n",
+    "By team **shlee** for the HuBMAP Hackathon 20241004\n",
+    "- Soo Hee Lee (https://github.com/sooheelee), individual contributor\n",
+    "- One of three winners \n",
+    "\n",
+    "**Problem and Goal**\n",
+    "Thymus Hassall's corpuscles (HCs) are thymic epithelial cells in the medulla region of the human thymus. [H&E staining of HCs show a rosette pattern with few nuclei](https://en.wikipedia.org/wiki/Hassall%27s_corpuscles). Given cytokit cell segmentation relies on nuclei definitions, the few nuclei in HCs from 2D image data produces 'holes' in their spatial representation. The goal of this analysis is to identify HC protein markers and compare HC protein signal inside and outside of defined cells in CODEX thymus samples. The anaysis further compares the CODEX protein detection to that in a 2D IMC (Imaging Mass Cytometry) thymus sample and to a single-cell RNA-Seq thymus atlas dataset. A secondary goal is to show different ways of wrangling genomic image data.\n",
+    "\n",
+    "**Background**\n",
+    "HCs are known to produce cytokine TSLP (thymic stromal lymphopoietin), but their function remains an enigma. HCs vary in size with diameters from 20 to more than 100 µm and grow larger with age. They are abesent from mice, except for one strain in New Zealand, making them difficult to study. The number of HCs increases after puberty and then decreases progressively. They contain [keratohyalin](https://en.wikipedia.org/wiki/Keratohyalin). HCs are implicated in diseases such as type 1 diabetes, rheumatoid arthritis, multiple sclerosis, and other autoimmune disease.\n",
+    "\n",
+    "**Overall Approach**\n",
+    "Use HuBMAP data portal interactive widgets to explore data and identify a tissue with large structures. Explore data types available for the tissue and study the available samples. Use desktop imaging tools Fiji to estimate size of structure and QuPath to manually create a mask truth set for one of the samples. Parameterize cellpose to segment structures across four CODEX sample images and compare signal from the mask versus cells within the mask. Finally, compare to thymus data sets from 2D Imaging Mass Cytometry (HuBMAP) and CZI single-cell RNA-Seq data (external). Data used in the analysis are as follows.\n",
+    "- [4 HuBMAP CODEX [CytoKit+SPRM] thymus samples](https://portal.hubmapconsortium.org/search?raw_dataset_type_keyword-assay_display_name_keyword[CODEX][0]=CODEX%20%5BCytokit%20%2B%20SPRM%5D&origin_samples.mapped_organ[0]=Thymus&entity_type[0]=Dataset)\n",
+    "- [1 HuBMAP 2D IMC thymus sample](https://portal.hubmapconsortium.org/search?raw_dataset_type_keyword-assay_display_name_keyword[2D%20Imaging%20Mass%20Cytometry][0]=2D%20Imaging%20Mass%20Cytometry&origin_samples.mapped_organ[0]=Thymus&entity_type[0]=Dataset)\n",
+    "- [(external) CZI Science cellxgene human thymus single-cell dataset](https://cellxgene.cziscience.com/collections/de13e3e2-23b6-40ed-a413-e9e12d7d3910)\n",
+    "\n",
+    "**Implementation**\n",
+    "- Tools used outside of notebook: QuPath, Fiji\n",
+    "- Python notebook packages: cv2, geopandas, matplotlib, numpy, pandas, scanpy, scipy, seabron, skimage, squidpy, tifffile\n",
+    "\n",
+    "**Biological Insights**\n",
+    "Thymus Hassall's corpuscles protein expression is represented by single-cell spatail data. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+      "source": [
+    "# linked datasets\n",
+    "uuids = {{ uuids | safe }}\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# CODEX image data urls\n",
+    "ddir = \"datasets/\"\n",
+    "\n",
+    "# Full resolution, non-pyramidal, multi-page, registered CODEX images, where pixel size == 0.3774µm.\n",
+    "# Registration between channels confirmed quickly by eye, using Fiji.\n",
+    "#\n",
+    "pixelsize = 0.3774\n",
+    "snames = {\n",
+    "    \"sample1-a\": \"43213991a54ce196d406707ffe2e86bd\",\n",
+    "    \"sample1-b\": \"d4e9ec618924a8d43cfe1e67c38c1447\",\n",
+    "    \"sample2-a\": \"822c9163d3be9b427dd0830f69a12305\",\n",
+    "    \"sample2-b\": \"37d06bb991afa2beb7b9460e746247ad\",\n",
+    "}\n",
+    "\n",
+    "codexsampleurls = {}\n",
+    "\n",
+    "for sn, id in snames.items():\n",
+    "    codexsampleurls[sn] = (\n",
+    "        f\"{ddir}{id}/stitched/expressions/reg1_stitched_expressions.ome.tiff\"\n",
+    "    )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# CODEX AnnData.zarr urls\n",
+    "codexanndataurls = {}\n",
+    "adatasuffix = \"/anndata-zarr/reg1_stitched_expressions-anndata.zarr\"\n",
+    "\n",
+    "for sn, id in snames.items():\n",
+    "    codexanndataurls[sn] = f\"{ddir}{id}{adatasuffix}\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# [1] Segment structures with cellpose"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [1.1] Segment structures with cellpose: load model, data and truth polygons"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Print progress (cellpose stdout)\n",
+    "io.logger_setup()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Cellpose enables use of GPUs; however, not currently for M1 architecture Macs, which I have.\n",
+    "# Thus, this notebook does not configure for GPU use.\n",
+    "use_GPU = core.use_gpu()\n",
+    "yn = [\"NO\", \"YES\"]\n",
+    "print(f\">>> GPU activated? {yn[use_GPU]}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Use cyto3 cellpose model.\n",
+    "# Cellpose offers functionality to train custom models, but the pretrained model works well enough for our purposes.\n",
+    "model = models.Cellpose(gpu=False, model_type=\"cyto3\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Created truth set polygons of HC regions manually, in QuPath, for sample1-a. QuPath outputs a geojson. This took ~10 minutes.\n",
+    "codgjurl = f\"{repofilepath}sample1-a-3ch.geojson\"\n",
+    "cdf = pd.read_json(codgjurl)\n",
+    "codgj = gpd.read_file(codgjurl)\n",
+    "codgj[\"scalefactor\"] = pixelsize\n",
+    "tester = \"sample1-a\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Visualize truth set polygons\n",
+    "plt.rcParams[\"figure.figsize\"] = (5, 5)\n",
+    "plt.rcParams[\"figure.dpi\"] = 80\n",
+    "\n",
+    "with tifffile.TiffFile(codexsampleurls[tester]) as ctif:\n",
+    "    cpage = ctif.pages[2]\n",
+    "    cimg = cpage.asarray()\n",
+    "\n",
+    "    fig, ax = plt.subplots()\n",
+    "    plt.imshow(cimg, cmap=\"binary\", vmax=np.max(cimg) / 1)\n",
+    "    codgj.plot(ax=ax, facecolor=\"none\", edgecolor=\"red\", aspect=1)\n",
+    "    plt.title(\"Polygons over CD15\", size=12)\n",
+    "    plt.axis(\"scaled\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# create a mask of the polygons\n",
+    "mm = np.zeros(cimg.shape)\n",
+    "\n",
+    "for i, row in cdf.iterrows():\n",
+    "    p = np.array(row.features[\"geometry\"][\"coordinates\"]).squeeze()\n",
+    "    r, c = ski.draw.polygon(p[:, 1], p[:, 0], cimg.shape)\n",
+    "    mm[r, c] = 1\n",
+    "\n",
+    "plt.imshow(mm)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create downsampled versions of the mask; factor 0 gives 1 µm pixel size\n",
+    "factors = [0, 1, 2, 3, 4, 5]\n",
+    "dmasks = {}\n",
+    "\n",
+    "for factor in factors:\n",
+    "    dm = scipy.ndimage.zoom(mm, pixelsize / 2**factor)\n",
+    "    dmasks[factor] = dm\n",
+    "\n",
+    "plt.imshow(dm)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [1.2] Segment structures with cellpose: parameterize with one sample"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create subsampled images for use with cellpose; factor 0 gives 1 µm pixel size\n",
+    "factors = [0, 1, 2, 3, 4, 5]\n",
+    "images = {}\n",
+    "\n",
+    "with tifffile.TiffFile(codexsampleurls[tester]) as ctif:\n",
+    "    cpage = ctif.pages[2].asarray()\n",
+    "    print(cpage.shape)\n",
+    "\n",
+    "    for factor in factors:\n",
+    "        img = scipy.ndimage.zoom(cpage, pixelsize / 2**factor)\n",
+    "        images[factor] = img\n",
+    "        print(factor, img.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Cellpose can take single or multipage fluorescent images, e.g. nucleus + cytosolic stains.\n",
+    "# Using single-image mode.\n",
+    "channels = np.array([[0, 0]])\n",
+    "\n",
+    "# Cellpose default diameter size is 30 pixels. Test various diameters (given in microns).\n",
+    "diameters = [64, 96, 128, 160, 192]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Takes ~2 minutes per diameter or <~10 minutes in total\n",
+    "results = {}\n",
+    "\n",
+    "for diameter in diameters:\n",
+    "    results[diameter] = {}\n",
+    "\n",
+    "    for factor, img in images.items():\n",
+    "        # Rescale micron diameter to match image pixels\n",
+    "        diam = diameter / (2**factor)\n",
+    "        print(factor, diam)\n",
+    "\n",
+    "        # Run cellpose\n",
+    "        masks, flows, styles, diams = model.eval(img, diameter=diam, channels=channels)\n",
+    "        results[diameter][factor] = [masks, flows, styles, diams]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Plot run results; 4th column lists parameters\n",
+    "for diameter, result in results.items():\n",
+    "    for factor, r in result.items():\n",
+    "        masks, flows, styles, diams = r\n",
+    "        fig = plt.figure(figsize=(12, 5))\n",
+    "        plot.show_segmentation(\n",
+    "            fig, images[factor], masks, flows[0], channels=channels[0]\n",
+    "        )\n",
+    "        plt.tight_layout()\n",
+    "        plt.title(f\"factor={factor} µm-diameter={diameter}\")\n",
+    "        plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Fraction overlap with truth set polygons and number of polygons\n",
+    "for diameter, result in results.items():\n",
+    "    for factor, r in result.items():\n",
+    "        masks, flows, styles, diams = r\n",
+    "\n",
+    "        truthmask = dmasks[factor]\n",
+    "        intersection_mask = np.logical_and(masks, truthmask)\n",
+    "\n",
+    "        # Fraction overlap\n",
+    "        score = round(np.sum(intersection_mask) / np.sum(truthmask), 3)\n",
+    "\n",
+    "        # Number of polygons\n",
+    "        nummasks = len(Counter(masks.flatten())) - 1\n",
+    "\n",
+    "        print(f\"factor={factor} µm-diameter={diameter} score={score} num={nummasks}\")\n",
+    "\n",
+    "        # Plot good segmentations\n",
+    "        if (score < 1.1) and (score > 0.9) and (nummasks <= 16) and (nummasks >= 10):\n",
+    "            plt.imshow(intersection_mask)\n",
+    "            plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We have a winner: `factor=4 µm-diameter=96 score=1.014, num=13`"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Best parameters and result\n",
+    "factor = 4\n",
+    "diameter = 96\n",
+    "masks, flows, styles, diams = results[diameter][factor]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Visualize winning result\n",
+    "fig = plt.figure(figsize=(12, 5))\n",
+    "plot.show_segmentation(fig, images[factor], masks, flows[0], channels=channels[0])\n",
+    "plt.tight_layout()\n",
+    "plt.title(f\"factor={factor} µm-diameter={diameter}\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Visualize the outlines alone\n",
+    "plt.imshow(utils.masks_to_outlines(masks))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [1.3] Segment structures with cellpose: apply best parameters to all samples"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Extract and downsample CD15 channel image, and save the original image dimensions\n",
+    "diameter = 96\n",
+    "images = {}\n",
+    "originalshapes = {}\n",
+    "\n",
+    "for sample, sampleurl in codexsampleurls.items():\n",
+    "    with tifffile.TiffFile(sampleurl) as ctif:\n",
+    "        ct = ctif.pages[2].asarray()\n",
+    "        originalshapes[sample] = ct.shape\n",
+    "\n",
+    "        img = scipy.ndimage.zoom(ct, pixelsize / 2**factor)\n",
+    "        images[sample] = img\n",
+    "        print(sample, ct.shape, img.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Run cellpose on each sample with winning parameters\n",
+    "sresults = {}\n",
+    "diam = diameter / (2**factor)\n",
+    "print(factor, diam)\n",
+    "\n",
+    "for sample, img in images.items():\n",
+    "    print(sample)\n",
+    "    masks, flows, styles, diams = model.eval(img, diameter=diam, channels=channels)\n",
+    "    sresults[sample] = [masks, flows, styles, diams]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Plot results for samples\n",
+    "for sample, result in sresults.items():\n",
+    "    masks, flows, styles, diams = result\n",
+    "    # nummasks,_ = cv2.connectedComponents(masks.astype(np.uint8))\n",
+    "    nummasks = len(Counter(masks.flatten())) - 1\n",
+    "    fig = plt.figure(figsize=(12, 5))\n",
+    "    plot.show_segmentation(fig, images[sample], masks, flows[0], channels=channels[0])\n",
+    "    plt.tight_layout()\n",
+    "    plt.title(f\"{sample} factor={factor}\\nµm-diameter={diameter} num={nummasks}\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We got most, but not all. We are missing at least two large ones. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [1.4] Segment structures with cellpose: rescue missed features and add to best results"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Rescue larger structures with an increased diameter cellpose run\n",
+    "diameter = diameter * 2\n",
+    "print(diameter)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sresults2 = {}\n",
+    "diam = diameter / (2**factor)\n",
+    "print(factor, diam)\n",
+    "\n",
+    "for sample, img in images.items():\n",
+    "    print(sample)\n",
+    "    masks, flows, styles, diams = model.eval(img, diameter=diam, channels=channels)\n",
+    "    sresults2[sample] = [masks, flows, styles, diams]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Plot results for samples\n",
+    "for sample, result in sresults2.items():\n",
+    "    masks, flows, styles, diams = result\n",
+    "    nummasks = len(Counter(masks.flatten())) - 1\n",
+    "    fig = plt.figure(figsize=(12, 5))\n",
+    "    plot.show_segmentation(fig, images[sample], masks, flows[0], channels=channels[0])\n",
+    "    plt.tight_layout()\n",
+    "    plt.title(f\"{sample} factor={factor}\\nµm-diameter={diameter} num={nummasks}\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "plt.rcParams[\"figure.figsize\"] = (1, 1)\n",
+    "plt.rcParams[\"figure.dpi\"] = 80\n",
+    "\n",
+    "# For the two samples, subset masks to the missed larger ones\n",
+    "rescuethese = {}\n",
+    "\n",
+    "for sample in [\"sample1-b\", \"sample2-a\"]:\n",
+    "    mask = sresults2[sample][0]\n",
+    "    contours, _ = cv2.findContours(\n",
+    "        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE\n",
+    "    )\n",
+    "\n",
+    "    sizecompare = 0\n",
+    "    largest = None\n",
+    "\n",
+    "    for i, contour in enumerate(contours):\n",
+    "        objectmask = np.zeros_like(mask)\n",
+    "        cv2.drawContours(objectmask, [contour], -1, 255, -1)\n",
+    "        size = len(contour)\n",
+    "\n",
+    "        # For sample2-a, interestingly cellpose called the size=29 object and missed the size=28 object called with the increased diameter.\n",
+    "        # So our assumption the largest object is the missed object is erroneous. This requires some custom hacking.\n",
+    "        if (sample == \"sample2-a\") and (size == 28):\n",
+    "            size = size * 2\n",
+    "\n",
+    "        if size >= sizecompare:\n",
+    "            sizecompare = size\n",
+    "            largest = objectmask\n",
+    "\n",
+    "    rescuethese[sample] = largest\n",
+    "    plt.imshow(largest)\n",
+    "    plt.title(sample)\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Merge rescued mask objects to corresponding masks (masks,flows,styles,diams)\n",
+    "updatedmasks = {}\n",
+    "\n",
+    "for sample, cellposeresult in sresults.items():\n",
+    "    masks = cellposeresult[0]\n",
+    "\n",
+    "    if sample in rescuethese.keys():\n",
+    "        addmask = rescuethese[sample]\n",
+    "        masks = np.ma.mask_or(masks, addmask)\n",
+    "        plt.imshow(masks)\n",
+    "        plt.show()\n",
+    "    else:\n",
+    "        masks = masks.astype(bool)\n",
+    "\n",
+    "    updatedmasks[sample] = masks"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Transform masks to full-resolution size and save to file\n",
+    "codexsamplemasks = {}\n",
+    "\n",
+    "for sample, masks in updatedmasks.items():\n",
+    "    img = ski.transform.resize(masks, originalshapes[sample], order=0)\n",
+    "    img = img.astype(int)\n",
+    "    codexsamplemasks[sample] = img\n",
+    "\n",
+    "    # Write masks to NPY files\n",
+    "    np.save(f\"{sample}-factor-diameter-mask.npy\", img, allow_pickle=True)\n",
+    "\n",
+    "# Visualize one to check rescale\n",
+    "plt.imshow(img)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Read in saved masks\n",
+    "codexsamplemasks = {}\n",
+    "for sample in snames:\n",
+    "    codexsamplemasks[sample] = np.load(f\"{sample}-factor-diameter-mask.npy\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# [2] Apply masks to CODEX"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [2.1] Apply masks to CODEX: images to quantify protein signal in HCs across samples\n",
+    "A more refined analysis would subtract the cytokit cell masks from the HC masks."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Wrangle CODEX 29 channel metadata labels. I cleaned these up from other metadata.\n",
+    "codexgenemap = pd.read_csv(f\"{repofilepath}codexgenemap-shlee.csv\", header=None)\n",
+    "codexgenemap.columns = [\"codex-raw\", \"codex\"]\n",
+    "codexgenemap[:2]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Wrangle CODEX 29 channel metadata labels. I cleaned these up from other metadata.\n",
+    "codexgenemap = pd.read_csv(f\"{repofilepath}codexgenemap-shlee.csv\", header=None)\n",
+    "codexgenemap.columns = [\"codex-raw\", \"codex\"]\n",
+    "codexgenemap[:2]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_pixel_values_for_mask_components(image, mask):\n",
+    "    num_labels, labels = cv2.connectedComponents(mask.astype(np.uint8))\n",
+    "    cpixelvalues, cpixelsums, cpixelareas, cmeanpixels = [], [], [], []\n",
+    "\n",
+    "    for label in range(1, num_labels):  # Skip label==0==background\n",
+    "        cmask = labels == label\n",
+    "        cpixels = image[cmask]\n",
+    "        cpixelvalues.append(cpixels)\n",
+    "\n",
+    "        pixelsum = np.sum(cpixels)\n",
+    "        area = np.sum(cmask)\n",
+    "        cpixelsums.append(pixelsum)\n",
+    "        cpixelareas.append(area)\n",
+    "        cmeanpixels.append(round(pixelsum / area, 2))\n",
+    "\n",
+    "    return cpixelvalues, cpixelsums, cpixelareas, cmeanpixels"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "jp-MarkdownHeadingCollapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "#### Extract protein signal from images corresponding to cellpose masks across samples and channels\n",
+    "cmeanpixels = {}\n",
+    "cpixelareas = {}\n",
+    "\n",
+    "for sample, samurl in codexsampleurls.items():\n",
+    "    print(sample)\n",
+    "    mask = codexsamplemasks[sample]\n",
+    "\n",
+    "    # Shrink the mask a bit to pertain only to HC internal area;\n",
+    "    # Visual inspection showed CD15 is mutually exclusive with CD3E, so use CD3E as the marker to exclude\n",
+    "    for i in range(30):\n",
+    "        mask = ski.morphology.binary_erosion(mask)\n",
+    "\n",
+    "    with tifffile.TiffFile(samurl) as ctif:\n",
+    "        smeanpixels = {}\n",
+    "\n",
+    "        for pag in tqdm(range(len(ctif.pages)), delay=5):\n",
+    "            cpage = ctif.pages[pag]\n",
+    "            cimg = cpage.asarray()\n",
+    "            _, _, careas, meanpixels = get_pixel_values_for_mask_components(cimg, mask)\n",
+    "            smeanpixels[pag] = meanpixels\n",
+    "\n",
+    "            if pag == 2:\n",
+    "                plt.rcParams[\"figure.figsize\"] = (5, 5)\n",
+    "                plt.rcParams[\"figure.dpi\"] = 80\n",
+    "                fig, ax = plt.subplots()\n",
+    "                plt.imshow(cimg, cmap=\"binary\", vmax=np.max(cimg) / 1)\n",
+    "                plt.imshow(mask, aspect=1, alpha=0.5)\n",
+    "                plt.show()\n",
+    "\n",
+    "        ctif.close()\n",
+    "        cmeanpixels[sample] = smeanpixels\n",
+    "        cpixelareas[sample] = careas"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Format mean pixels into dataframes; create unique barcode ids for sample HCs\n",
+    "samplebarcodes = {}\n",
+    "cmpixdf = {}\n",
+    "\n",
+    "for sample, array in cmeanpixels.items():\n",
+    "    df = pd.DataFrame(array)\n",
+    "    cmpixdf[sample] = df\n",
+    "    numbcs = len(df)\n",
+    "    persamplebcs = []\n",
+    "\n",
+    "    for n in range(numbcs):\n",
+    "        nstr = str(n).zfill(3)\n",
+    "\n",
+    "        bc = f\"{sample}-hc-{nstr}\"\n",
+    "        persamplebcs.append(bc)\n",
+    "\n",
+    "    samplebarcodes[sample] = persamplebcs\n",
+    "\n",
+    "cmpixdf[sample][:2]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Create single AnnData objects of the data. Brings the data into a familiar data format paradigm of biomedical scientists.\n",
+    "adfs = []\n",
+    "\n",
+    "for sample, df in cmpixdf.items():\n",
+    "    adata = ad.AnnData(X=df)\n",
+    "    # Define barcodes\n",
+    "    adata.obs.index = samplebarcodes[sample]\n",
+    "    adata.obs[\"sample\"] = sample\n",
+    "    adata.obs[\"identification-method\"] = \"cellpose CD15+\"\n",
+    "    # TODO: Add spatial information for each HC, e.g. centroid positions and the size (area)\n",
+    "    adata.obs[\"area\"] = cpixelareas[sample]\n",
+    "\n",
+    "    # Define feature names\n",
+    "    adata.var.index = codexgenemap[\"codex\"]\n",
+    "    adata.var[\"codex-raw\"] = codexgenemap[\"codex-raw\"]\n",
+    "    adata.var[\"feature_type\"] = \"CODEX Antibody\"\n",
+    "\n",
+    "    adfs.append(adata)\n",
+    "    print(adata)\n",
+    "\n",
+    "# Given unique barcodes across samples, concatenate into single anndata object\n",
+    "cad = ad.concat(adfs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Process as if single-cell RNA-Seq data.\n",
+    "sc.pp.filter_cells(cad, min_counts=2)\n",
+    "sc.pp.filter_genes(cad, min_cells=2)\n",
+    "cad.layers[\"raw\"] = cad.X.copy()\n",
+    "sc.pp.normalize_total(cad, inplace=True)\n",
+    "sc.pp.log1p(cad)\n",
+    "sc.pp.pca(cad)\n",
+    "sc.pp.neighbors(cad)\n",
+    "sc.tl.umap(cad)\n",
+    "sc.tl.leiden(cad, n_iterations=2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Save to h5ad\n",
+    "cad.write_h5ad(\"cad.h5ad\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "g = sns.clustermap(\n",
+    "    cad.to_df().T,\n",
+    "    standard_scale=1,\n",
+    "    cmap=\"mako\",\n",
+    "    figsize=(15, 8),\n",
+    ")\n",
+    "g.fig.suptitle(\n",
+    "    \"Protein expression across Hassall's corpuscles in four CODEX samples\", size=16\n",
+    ")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "A subset of HCs show differential expression."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Explore gene x gene relationships while factoring for HC size.\n",
+    "sns.scatterplot(\n",
+    "    x=\"CD3E\",\n",
+    "    y=\"KRT8|KRT5|KRT34\",\n",
+    "    data=cad.to_df().merge(cad.obs.area, how=\"left\", left_index=True, right_index=True),\n",
+    "    hue=\"area\",\n",
+    ")\n",
+    "plt.legend(loc=(1.04, 0))\n",
+    "plt.xscale(\"log\")\n",
+    "plt.yscale(\"log\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [2.2] Apply masks to CODEX: Cytokit segmented cells to identify cell markers and subset HC cells across samples"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "warnings.filterwarnings(\"ignore\", category=Warning)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "codexanndataurls.values()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Process AnnData Zarrs across samples\n",
+    "fulladatas = {}\n",
+    "\n",
+    "for sample, url in tqdm(codexanndataurls.items()):\n",
+    "    print(url)\n",
+    "\n",
+    "    # HuBMAP formats anndata objects as Zarr\n",
+    "    adata = ad.read_zarr(url)\n",
+    "\n",
+    "    # If from h5ad:\n",
+    "    # adata = ad.read_h5ad(f'{sample}.h5ad')\n",
+    "\n",
+    "    adata.obs[\"sample\"] = sample\n",
+    "    adata.obs[\"patient\"] = sample.split(\"-\")[0]\n",
+    "\n",
+    "    # Switch out feature labels\n",
+    "    adata.var = adata.var.merge(\n",
+    "        codexgenemap, how=\"left\", left_index=True, right_on=\"codex-raw\"\n",
+    "    )\n",
+    "    adata.var.set_index(\"codex\", inplace=True)\n",
+    "\n",
+    "    fulladatas[sample] = adata"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Label cells as inside or outside of HCs using masks we got from cellpose\n",
+    "for sample, mask in tqdm(codexsamplemasks.items()):\n",
+    "    adata = fulladatas[sample]\n",
+    "    insideoroutside = []\n",
+    "\n",
+    "    # Shrink the mask a bit to pertain only to HC internal area;\n",
+    "    # Visual inspection showed CD15 is mutually exclusive with CD3E, so use CD3E as the marker to exclude\n",
+    "    for i in range(30):\n",
+    "        mask = ski.morphology.binary_erosion(mask)\n",
+    "\n",
+    "    for coordinates in adata.obsm[\"xy\"]:\n",
+    "        x = int(coordinates[1])\n",
+    "        y = int(coordinates[0])\n",
+    "\n",
+    "        if x < mask.shape[0] and y < mask.shape[1]:\n",
+    "            if mask[x, y]:\n",
+    "                insideoroutside.append(True)\n",
+    "            else:\n",
+    "                insideoroutside.append(False)\n",
+    "        else:\n",
+    "            insideoroutside.append(False)\n",
+    "\n",
+    "    adata.obs[\"HC\"] = insideoroutside"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Subset anndata objects to cells inside of HCs\n",
+    "subdfs = {}\n",
+    "\n",
+    "for sample, adata in fulladatas.items():\n",
+    "    sub = adata[adata.obs[\"HC\"]]\n",
+    "\n",
+    "    # Create unique barcode ids\n",
+    "    sub.obs.index = (\n",
+    "        np.array(sub.obs[\"sample\"])\n",
+    "        + \"_\"\n",
+    "        + np.array([str(x) for x in list(sub.obs.index)])\n",
+    "    )\n",
+    "    subdfs[sample] = sub"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Merge the sample anndata objects\n",
+    "cad2 = ad.concat(subdfs.values())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Format spatial data for squidpy\n",
+    "xyzip = np.array([list(t) for t in zip(*cad2.obsm[\"xy\"])])\n",
+    "cad2.obsm[\"x\"] = xyzip[0]\n",
+    "cad2.obsm[\"y\"] = xyzip[1]\n",
+    "cad2.obsm[\"spatial\"] = cad2.obsm[\"xy\"]\n",
+    "\n",
+    "# Process like single-cell RNA-Seq\n",
+    "sc.pp.normalize_total(cad2, inplace=True)\n",
+    "sc.pp.log1p(cad2)\n",
+    "sc.pp.pca(cad2)\n",
+    "sc.pp.neighbors(cad2)\n",
+    "sc.tl.umap(cad2)\n",
+    "sc.tl.leiden(cad2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Write to h5ad\n",
+    "cad2.write_h5ad(\"cad2.h5ad\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Visualize each tissue sample for a subset of features\n",
+    "mygenes = [\"FUT4\", \"CD3E\", \"CD8A\", \"KRT8|KRT5|KRT34\"]\n",
+    "\n",
+    "for sample in snames:\n",
+    "    print(sample)\n",
+    "    sq.pl.spatial_scatter(\n",
+    "        cad2[cad2.obs[\"sample\"] == sample],\n",
+    "        library_id=\"spatial\",\n",
+    "        shape=None,\n",
+    "        color=mygenes,\n",
+    "        # wspace=0.4,\n",
+    "    )\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Plot each sample\n",
+    "for sample in snames:\n",
+    "    print(sample)\n",
+    "    sq.pl.spatial_scatter(\n",
+    "        cad2[cad2.obs[\"sample\"] == sample],\n",
+    "        library_id=\"spatial\",\n",
+    "        shape=None,\n",
+    "        size=12,\n",
+    "        color=[\"leiden\", \"FUT4\"],\n",
+    "    )\n",
+    "    # plt.title(sample, size=16)\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot all samples in same space 🍩\n",
+    "sq.pl.spatial_scatter(\n",
+    "    cad2,\n",
+    "    library_id=\"spatial\",\n",
+    "    shape=None,\n",
+    "    color=[\"leiden\"],\n",
+    "    figsize=(8, 8),\n",
+    ")\n",
+    "# plt.title(sample, size=16)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# visualize umap of clusters for all samples\n",
+    "sc.pl.umap(\n",
+    "    cad2,\n",
+    "    color=[\"sample\", \"leiden\", \"FUT4\"],\n",
+    "    wspace=0.4,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Sample1 and sample2 individuals are different. The 'a' and 'b' labels denote different tissue slices from an individual. The difference between the two patient samples could be real or could be a batch effect."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Neighborhood enrichment\n",
+    "sq.gr.spatial_neighbors(cad2, coord_type=\"generic\", delaunay=True)\n",
+    "sq.gr.nhood_enrichment(cad2, cluster_key=\"leiden\")\n",
+    "sq.pl.nhood_enrichment(\n",
+    "    cad2,\n",
+    "    cluster_key=\"leiden\",\n",
+    "    figsize=(5, 5),\n",
+    "    title=\"Neighborhood enrichment adata\",\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lclustersoi = [\"2\", \"5\", \"10\", \"11\", \"14\", \"16\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Plot specific leiden clusters\n",
+    "for sample in snames:\n",
+    "    print(sample)\n",
+    "    sq.pl.spatial_scatter(\n",
+    "        cad2[(cad2.obs[\"leiden\"].isin(lclustersoi)) & (cad2.obs[\"sample\"] == sample)],\n",
+    "        library_id=\"spatial\",\n",
+    "        shape=None,\n",
+    "        color=[\"leiden\"],\n",
+    "        figsize=(5, 5),\n",
+    "        size=20,\n",
+    "    )\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sc.tl.rank_genes_groups(cad2, \"sample\", method=\"wilcoxon\", key_added=\"wilcoxon\")\n",
+    "sc.pl.rank_genes_groups_dotplot(cad2, n_genes=5, key=\"wilcoxon\", groupby=\"sample\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# sc.tl.rank_genes_groups(cad2, 'leiden', method='wilcoxon', key_added = \"wilcoxon\")\n",
+    "# sc.pl.rank_genes_groups_dotplot(cad2, n_genes=5, key=\"wilcoxon\", groupby=\"leiden\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Identify dfferentally expressed genes for specific clusters against a reference\n",
+    "csets = [\n",
+    "    [\"5\", \"14\"],\n",
+    "    [\"10\", \"16\"],  # ['2', '11'], ['11', '14'], ['5', '11'], ['5', '2']\n",
+    "]\n",
+    "for pair in csets:\n",
+    "    sc.tl.rank_genes_groups(\n",
+    "        cad2, \"leiden\", method=\"wilcoxon\", groups=[pair[1]], reference=pair[0]\n",
+    "    )\n",
+    "    sc.pl.rank_genes_groups(cad2, groups=[pair[1]], n_genes=29)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# [3] Pseudobulk comparisons"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [3.1] Pseduobulk comparisons: CODEX protein expression inside versus outside of cells in HCs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Pseudobulk per-gene comparison normalized by number of ids (structures or cells)\n",
+    "x = cad.to_df().sum() / len(cad)\n",
+    "y = cad2.to_df().sum() / len(cad2)\n",
+    "srs, srsp = scipy.stats.spearmanr(x, y)\n",
+    "srs = round(srs, 4)\n",
+    "srsp = round(srsp, 4)\n",
+    "\n",
+    "sns.scatterplot(x=x, y=y, hue=x.index)\n",
+    "plt.xlabel(\"outside\", size=12)\n",
+    "plt.ylabel(\"inside\", size=12)\n",
+    "plt.title(f\"All versus per-cell HC per-gene signal\\nSpearman={srs} p={srsp}\", size=14)\n",
+    "plt.legend(loc=(1.04, 0), ncol=2)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We see a positive correlation with a weak rank score. MS4A1, KRTs and HLA-DRs are above the diagnal, while MKI67 and CD8A are below the diagnal. These correspond to differentially expressed in the previous section's gene rank plots of\n",
+    "- Inside leiden clusters 14 & 16\n",
+    "- Outside leiden clusters 5 & 10 "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lclustersoi"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "discrepantgenes = [\n",
+    "    \"MS4A1\",\n",
+    "    \"KRT8|KRT5|KRT34\",\n",
+    "    \"HLA-DRA|HLA-DRB|HLA-DRC\",\n",
+    "    \"MKI67\",\n",
+    "    \"CD8A\",\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Subset the correlation to the more central leiden clusters\n",
+    "x = cad.to_df().sum() / len(cad)\n",
+    "y = cad2[cad2.obs[\"leiden\"].isin(lclustersoi)].to_df().sum() / len(\n",
+    "    cad2[cad2.obs[\"leiden\"].isin(lclustersoi)]\n",
+    ")\n",
+    "srs, srsp = scipy.stats.spearmanr(x, y)\n",
+    "srs = round(srs, 4)\n",
+    "srsp = round(srsp, 4)\n",
+    "\n",
+    "sns.scatterplot(x=x, y=y, hue=x.index)\n",
+    "plt.xlabel(\"outside\", size=12)\n",
+    "plt.ylabel(\"inside\", size=12)\n",
+    "plt.title(f\"All versus per-cell HC per-gene signal\\nSpearman={srs} p={srsp}\", size=14)\n",
+    "plt.legend(loc=(1.04, 0), ncol=2)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [3.2] Pseduobulk comparisons: CODEX versus 2D IMC thymus HCs \n",
+    "HuBMAP offers thymus 2D Imaging Mass Cytometry (IMC) data as well as a 3D IMC data. Look into one of the 2D samples."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Manually curated mask from QuPath and the image path\n",
+    "imsdir = f\"{ddir}9a6403bb0423e62950926a7d4fdab45b/ometiff/20191202_HuBMAP_Thymus/\"\n",
+    "imsimgurl = f\"{imsdir}20191202_HuBMAP_Thymus_s0_p8_r6_a6_ac.ome.tiff\"  # non-pyramidal\n",
+    "\n",
+    "# Feature map I cleaned up previously\n",
+    "channamesurl = f\"{repofilepath}channelnames-shlee.csv\"\n",
+    "channames = pd.read_csv(channamesurl)\n",
+    "channames[:2]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create data object for 2D IMS sample image data by binning.\n",
+    "# This dataset has stains that enable nuclei and cell segmentation. There are many tutorials for the myriad cell segmentation tools out there.\n",
+    "# Taking simple approach of 4x4 binning the signal. Each pixel is originally 1 µm in size.\n",
+    "ichans = {}\n",
+    "iarrays = {}\n",
+    "factor = 0.25\n",
+    "\n",
+    "for i in range(len(channames)):\n",
+    "\n",
+    "    with tifffile.TiffFile(imsimgurl) as itif:\n",
+    "        ipage = itif.pages[i]\n",
+    "        iimg = ipage.asarray()\n",
+    "        resample = scipy.ndimage.zoom(\n",
+    "            iimg,\n",
+    "            factor,\n",
+    "            order=1,\n",
+    "        )  # grid_mode=True)\n",
+    "        iimgdf = pd.DataFrame(resample)\n",
+    "        iarrays[i] = resample\n",
+    "        ichans[i] = iimgdf\n",
+    "\n",
+    "print(iimg.shape, resample.shape)\n",
+    "plt.imshow(iarrays[44], cmap=\"binary\", vmax=np.max(iarrays[44]) / 3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create barcode ids\n",
+    "barcodes = []\n",
+    "spatial = []\n",
+    "\n",
+    "for c in range(len(ichans[0])):\n",
+    "    for r in range(len(ichans[0])):\n",
+    "        clabel = \"{:03d}\".format(c)\n",
+    "        rlabel = \"{:03d}\".format(r)\n",
+    "        barcodes.append(f\"imc-x{clabel}y{rlabel}\")\n",
+    "        spatial.append([c, r])\n",
+    "\n",
+    "print(len(barcodes))\n",
+    "spatial = np.array(spatial)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# col,row\n",
+    "percellarrays = []\n",
+    "features = []\n",
+    "\n",
+    "for k, a in iarrays.items():\n",
+    "    gene = list(channames[channames[\"channel\"] == k][\"name\"])[0]\n",
+    "\n",
+    "    if gene == \"na\":\n",
+    "        continue\n",
+    "    else:\n",
+    "        percellarray = []\n",
+    "        features.append(gene)\n",
+    "\n",
+    "        # Create barcode ids\n",
+    "        for c in range(len(ichans[0])):\n",
+    "            for r in range(len(ichans[0])):\n",
+    "                clabel = \"{:03d}\".format(c)\n",
+    "                rlabel = \"{:03d}\".format(r)\n",
+    "                label = f\"imc-x{clabel}y{rlabel}\"\n",
+    "\n",
+    "                pv = a[c][r]\n",
+    "                percellarray.append(pv)\n",
+    "\n",
+    "        percellarrays.append(np.array(percellarray))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Transpose the per cell arrays into per feature arrays\n",
+    "perfeaturearrays = np.array(list(zip(*percellarrays)))\n",
+    "\n",
+    "# Create AnnData object\n",
+    "idata = sc.AnnData(perfeaturearrays, obsm={\"spatial\": spatial})\n",
+    "idata.var.index = features\n",
+    "idata.obs[\"ID\"] = barcodes\n",
+    "idata.obs.index = idata.obs[\"ID\"]\n",
+    "xyzip = np.array([list(t) for t in zip(*idata.obsm[\"spatial\"])])\n",
+    "x = xyzip[0]\n",
+    "y = xyzip[1]\n",
+    "idata.obsm[\"x\"] = x\n",
+    "idata.obsm[\"y\"] = y"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sc.pp.filter_cells(idata, min_counts=10)\n",
+    "sc.pp.filter_genes(idata, min_cells=10)\n",
+    "idata.layers[\"counts\"] = idata.X.copy()\n",
+    "sc.pp.normalize_total(idata, inplace=True)\n",
+    "sc.pp.log1p(idata)\n",
+    "sc.pp.pca(idata)\n",
+    "sc.pp.neighbors(idata)\n",
+    "sc.tl.umap(idata)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Takes some minutes\n",
+    "sc.tl.leiden(idata)\n",
+    "# idata.write(f'{ddir}idata-20241004-shlee.h5ad')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Write to h5ad\n",
+    "idata.write_h5ad(\"idata.h5ad\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sq.pl.spatial_scatter(\n",
+    "    idata,\n",
+    "    library_id=\"spatial\",\n",
+    "    color=[\"FUT4\", \"CD274\", \"CD8A\", \"CD3E\"],\n",
+    "    shape=None,\n",
+    "    size=2,\n",
+    "    img=False,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sc.pl.umap(\n",
+    "    idata,\n",
+    "    color=[\"leiden\"],\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sq.gr.spatial_neighbors(idata, coord_type=\"generic\", delaunay=True)\n",
+    "sq.gr.nhood_enrichment(idata, cluster_key=\"leiden\")\n",
+    "fig, ax = plt.subplots(1, 2, figsize=(13, 7))\n",
+    "\n",
+    "sq.pl.nhood_enrichment(\n",
+    "    idata,\n",
+    "    cluster_key=\"leiden\",\n",
+    "    library_id=\"spatial\",\n",
+    "    figsize=(8, 8),\n",
+    "    title=\"Neighborhood enrichment idata\",\n",
+    "    ax=ax[0],\n",
+    ")\n",
+    "sq.pl.spatial_scatter(idata, color=\"leiden\", shape=None, size=2, ax=ax[1])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot specific leiden clusters\n",
+    "iclustersoi = [\"10\", \"5\"]\n",
+    "\n",
+    "sq.pl.spatial_scatter(\n",
+    "    idata[idata.obs[\"leiden\"].isin(iclustersoi)],\n",
+    "    library_id=\"spatial\",\n",
+    "    shape=None,\n",
+    "    color=[\"leiden\"],\n",
+    "    size=12,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Identify dfferentally expressed genes for specific clusters against a reference\n",
+    "csets = [iclustersoi]\n",
+    "\n",
+    "for pair in csets:\n",
+    "    sc.tl.rank_genes_groups(\n",
+    "        idata, \"leiden\", method=\"wilcoxon\", groups=[pair[1]], reference=pair[0]\n",
+    "    )\n",
+    "    sc.pl.rank_genes_groups(idata, groups=[pair[1]], n_genes=25)\n",
+    "\n",
+    "    sc.tl.rank_genes_groups(\n",
+    "        idata, \"leiden\", method=\"wilcoxon\", groups=[pair[0]], reference=pair[1]\n",
+    "    )\n",
+    "    sc.pl.rank_genes_groups(idata, groups=[pair[0]], n_genes=25)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Pseudobulk per-gene comparison normalized by number of ids (structures or cells)\n",
+    "x = idata[idata.obs[\"leiden\"].isin(iclustersoi)].to_df().sum() / len(\n",
+    "    idata[idata.obs[\"leiden\"].isin(iclustersoi)]\n",
+    ")\n",
+    "y = cad.to_df().sum() / len(cad)\n",
+    "ic = pd.concat([x, y], axis=1)\n",
+    "ic.columns = [\"2D IMS\", \"CODEX mask-based\"]\n",
+    "icf = ic.dropna()\n",
+    "\n",
+    "srs, srsp = scipy.stats.spearmanr(\n",
+    "    icf[\"2D IMS\"], icf[\"CODEX mask-based\"], nan_policy=\"omit\"\n",
+    ")\n",
+    "srs = round(srs, 4)\n",
+    "srsp = round(srsp, 4)\n",
+    "\n",
+    "sns.scatterplot(x=\"2D IMS\", y=\"CODEX mask-based\", data=icf, hue=icf.index)\n",
+    "plt.title(f\"Per-protein signal in HCs\\nSpearman={srs} p={srsp}\", size=14)\n",
+    "plt.legend(loc=(1.04, 0))\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Pseudobulk per-gene comparison normalized by number of ids (structures or cells)\n",
+    "# x = idata[idata.obs['leiden']=='11'].to_df().sum()/len(idata[idata.obs['leiden']=='11'])\n",
+    "x = idata[idata.obs[\"leiden\"].isin(iclustersoi)].to_df().sum() / len(\n",
+    "    idata[idata.obs[\"leiden\"].isin(iclustersoi)]\n",
+    ")\n",
+    "y = cad2.to_df().sum() / len(cad2)\n",
+    "ic = pd.concat([x, y], axis=1)\n",
+    "ic.columns = [\"2D IMS\", \"CODEX cell-based\"]\n",
+    "icf = ic.dropna()\n",
+    "\n",
+    "srs, srsp = scipy.stats.spearmanr(\n",
+    "    icf[\"2D IMS\"], icf[\"CODEX cell-based\"], nan_policy=\"omit\"\n",
+    ")\n",
+    "srs = round(srs, 4)\n",
+    "srsp = round(srsp, 4)\n",
+    "\n",
+    "sns.scatterplot(x=\"2D IMS\", y=\"CODEX cell-based\", data=icf, hue=icf.index)\n",
+    "plt.title(f\"Per-protein signal in HCs\\nSpearman={srs} p={srsp}\", size=14)\n",
+    "plt.legend(loc=(1.04, 0))\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The masked-based CODEX HC data corresponds slightly better to the 2D IHC data compared to the cell-based CODEX data for the 15 common markers. Keep in mind the patient sample is different for the 2D IHC sample than the CODEX samples."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### [3.3] Pseudobulk comparisons: CODEX, 2D IMC and scRNA-Seq\n",
+    "CZI cellxgene hosts single-cell RNA-Seq cell atlas data for human thymus. The study\n",
+    "> [A cell atlas of human thymic development defines T cell repertoire formation](https://www.science.org/doi/10.1126/science.aay3224)\n",
+    "\n",
+    "offers three data sets."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cziurls = {\n",
+    "    \"czifull\": \"c6e08ab6-ab3b-41dc-8058-8e6442e081ec.h5ad\",  # 255,901 cells\n",
+    "    \"czistem\": \"59d5b3c5-9a55-44ae-a7fa-c14567e02755.h5ad\",  # 27,589 cells\n",
+    "    \"czitecs\": \"5401b83e-2c9b-40a0-b20e-fd9a58c69d92.h5ad\",  # 18,524 cells\n",
+    "}\n",
+    "cgdir = f\"{ddir}cellxgene/\"\n",
+    "ctlabel = \"cell_type\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "for url in cziurls.values():\n",
+    "    !wget --directory-prefix={cgdir} https://datasets.cellxgene.cziscience.com/{url}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def anndataToPseudobulk(\n",
+    "    url=str,\n",
+    "    slabel=None,\n",
+    "    flabel=\"feature_name\",\n",
+    "    clabel=\"cell_type\",\n",
+    "):\n",
+    "    adata = ad.read_h5ad(url)\n",
+    "    adata.var.index = adata.var[flabel]\n",
+    "    cts = set(adata.obs[clabel])\n",
+    "    bulk = []\n",
+    "    for ct in cts:\n",
+    "        sub = adata[adata.obs[adata.obs[clabel] == ct].index].to_df()\n",
+    "        sub2 = pd.DataFrame(sub.sum() / len(sub))\n",
+    "        sub2.columns = [ct]\n",
+    "        bulk.append(sub2)\n",
+    "\n",
+    "    return bulk"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# czibulkraw = {}\n",
+    "# czibulkraw['czitecs'] = ad.read_h5ad('datasets/cellxgene/5401b83e-2c9b-40a0-b20e-fd9a58c69d92.h5ad')\n",
+    "# czibulkraw['czistem'] = ad.read_h5ad('datasets/cellxgene/59d5b3c5-9a55-44ae-a7fa-c14567e02755.h5ad')\n",
+    "# czibulkraw['czifull'] = ad.read_h5ad('datasets/cellxgene/c6e08ab6-ab3b-41dc-8058-8e6442e081ec.h5ad')\n",
+    "\n",
+    "# czibulk = {}\n",
+    "# czibulk['czitecs'] = anndataToPseudobulk(czibulkraw['czitecs'])\n",
+    "# czibulk['czistem'] = anndataToPseudobulk(czibulkraw['czistem'])\n",
+    "# czibulk['czifull'] = anndataToPseudobulk(czibulkraw['czifull'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cziurls = {\n",
+    "    \"czifull\": \"c6e08ab6-ab3b-41dc-8058-8e6442e081ec.h5ad\",\n",
+    "    \"czistem\": \"59d5b3c5-9a55-44ae-a7fa-c14567e02755.h5ad\",\n",
+    "    \"czitecs\": \"5401b83e-2c9b-40a0-b20e-fd9a58c69d92.h5ad\",\n",
+    "}\n",
+    "\n",
+    "# Read in AnnData objects and convert to pseudobulk counts for each cell_type label\n",
+    "czibulk = {}\n",
+    "\n",
+    "# This works on my laptop but in HuBMAP Workspaces gives an 'unable to sychronously' error.\n",
+    "# Reading in individually kills the kernel. I think these may be too unweildy. More cores and more memory seem to help.\n",
+    "for name, url in cziurls.items():\n",
+    "    print(f\"{ddir}cellxgene/{url}\")\n",
+    "    pseudo = anndataToPseudobulk(f\"{ddir}cellxgene/{url}\")\n",
+    "    czibulk[name] = pseudo"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "# Wrangle gene names from the CODEX and IMC data and find common genes to CZI\n",
+    "onames = set()\n",
+    "nameslist = list(channames[\"name\"]) + list(codexgenemap[\"codex\"])\n",
+    "\n",
+    "for cname in nameslist:\n",
+    "    if cname == \"na\":\n",
+    "        continue\n",
+    "    elif str(\"|\") in str(cname):\n",
+    "        mnames = cname.split(\"|\")\n",
+    "        for mname in mnames:\n",
+    "            onames.add(mname)\n",
+    "    elif str(\"-\") in str(cname):\n",
+    "        mnames = cname.split(\"-\")\n",
+    "        for mname in mnames:\n",
+    "            onames.add(mname)\n",
+    "    else:\n",
+    "        onames.add(cname)\n",
+    "\n",
+    "commongenes = list(set(list(czibulk[\"czitecs\"][0].index)).intersection(onames))\n",
+    "len(commongenes)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Read in previously saved anndata objects\n",
+    "cad = ad.read_h5ad(\"cad.h5ad\")\n",
+    "cad2 = ad.read_h5ad(\"cad2.h5ad\")\n",
+    "idata = ad.read_h5ad(\"idata.h5ad\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lclustersoi = [\"2\", \"5\", \"10\", \"11\", \"14\", \"16\"]\n",
+    "iclustersoi = [\"9\", \"6\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = cad.to_df().sum() / len(cad)\n",
+    "y = cad2[cad2.obs[\"leiden\"].isin(lclustersoi)].to_df().sum() / len(\n",
+    "    cad2[cad2.obs[\"leiden\"].isin(lclustersoi)]\n",
+    ")\n",
+    "z = idata[idata.obs[\"leiden\"].isin(iclustersoi)].to_df().sum() / len(\n",
+    "    idata[idata.obs[\"leiden\"].isin(iclustersoi)]\n",
+    ")\n",
+    "\n",
+    "xyz = pd.DataFrame(pd.concat([x, y, z], axis=1))\n",
+    "xyz.columns = [\"CODEX mask-based\", \"CODEX cell-based\", \"2D IMC\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "pd.concat(czibulk[\"czifull\"], axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "commondfs = {}\n",
+    "\n",
+    "for name, mylist in czibulk.items():\n",
+    "    df = pd.concat(mylist, axis=1)\n",
+    "    czisub = df.loc[commongenes]\n",
+    "    czisub = czisub.merge(xyz, how=\"outer\", left_index=True, right_index=True)\n",
+    "\n",
+    "    commondfs[name] = czisub\n",
+    "\n",
+    "print(commondfs.keys())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sns.clustermap(\n",
+    "    commondfs[\"czifull\"].dropna(),\n",
+    "    standard_scale=1,\n",
+    "    cmap=\"mako\",\n",
+    "    figsize=(12, 9),\n",
+    "    row_cluster=True,\n",
+    "    col_cluster=True,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sns.clustermap(\n",
+    "    commondfs[\"czistem\"].dropna(),\n",
+    "    standard_scale=1,\n",
+    "    cmap=\"mako\",\n",
+    "    figsize=(5, 7),\n",
+    "    row_cluster=True,\n",
+    "    col_cluster=True,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sns.clustermap(\n",
+    "    commondfs[\"czitecs\"].dropna(),\n",
+    "    standard_scale=1,\n",
+    "    cmap=\"mako\",\n",
+    "    figsize=(3, 7),\n",
+    "    row_cluster=True,\n",
+    "    col_cluster=True,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Literature states HC cells are akin to medullary TECs. RNA expression does not always correlate with protein expression and technology differences can make data noncomparable. "
+   ]
+  }
+ ]
