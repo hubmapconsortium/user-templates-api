@@ -1,0 +1,13 @@
+{
+  "title": "Human Reference Atlas (HRA) Cell Distance Explorer (CDE) Tutorial",
+  "description": "This notebook shows users how to get a sample dataset for the CDE and visualize it with the node-dist-vis and CDE Jupyter widget.",
+  "tags": [
+    "hra",
+    "api",
+    "cde"
+  ],
+  "is_multi_dataset_template": true,
+  "template_format": "jinja",
+  "is_hidden": false,
+  "last_modified_unix_timestamp": 1770060963
+}
