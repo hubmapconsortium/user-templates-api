@@ -1,0 +1,15 @@
+{
+  "title": "RAMCES cell marker prediction",
+  "description": "Rank channels for cell segmentation in spatial proteomics datasets",
+  "tags": ["codex"], 
+  "is_multi_dataset_template": false,
+  "template_format": "jinja",
+  "examples": [
+    {
+      "title": "RAMCES on lung PhenoCycler",
+      "description": "Predict segmentation channels for PhenoCycler data from lung",
+      "datasets": ["70637954487c4f20828b30841b68f1e5"]
+    }
+  ],
+  "is_hidden": false
+}
