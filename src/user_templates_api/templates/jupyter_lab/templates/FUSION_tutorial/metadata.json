@@ -1,5 +1,5 @@
 {
-  "title": "FUSION tutorial",
+  "title": "FUSION++",
   "description": "This notebook provides a comprehensive guide on utilizing FUSION within the HuBMAP Workspace. FUSION-package is a digital toolkit for advanced spatial multi-omics analysis via JupyterHub. It offers step-by-step instructions, ready-to-use code, and integrated access to HuBMAP and external resources, all within a single, reproducible workflow.",
   "tags": [
     "api",
