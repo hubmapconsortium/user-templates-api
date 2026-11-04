@@ -7,3 +7,5 @@ __pycache__/
 /.venv/
 /src/config.json
 .DS_Store
+src/BUILD
+src/VERSION
