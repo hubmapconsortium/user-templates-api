@@ -1,0 +1,31 @@
+name: uta
+services:
+  web:
+    build:
+      context: ./Dockerfile
+    # This hostname is used by Gateway nginx proxy
+    hostname: user-templates-api
+    container_name: user-templates-api
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5001"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: bash -c "docker/user_templates_api/start.sh"
+    volumes:
+      - ./user_templates_api:/code/docker/user_templates_api
+      - ../src:/code
+      - ./user_templates_api/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./user_templates_api/nginx/conf.d/user-templates.conf:/etc/nginx/conf.d/user-templates.conf
+      - ../BUILD:/code/BUILD
+      - ../VERSION:/code/VERSION
+    networks:
+      - gateway_hubmap
+    init: true
+    restart: always
+
+networks:
+  # This is the network created by gateway to enable communicaton between multiple docker-compose projects
+  gateway_hubmap:
+    external: true
